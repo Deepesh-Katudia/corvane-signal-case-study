@@ -7,10 +7,15 @@ import type { SourceFile } from "@/engine/ingest/loadDataset";
 export interface UploadStore {
   readonly kind: "local" | "supabase";
   list(): Promise<SourceFile[]>;
-  save(file: SourceFile): Promise<void>;
+  count(): Promise<number>;
+  /** Stores a new file and never overwrites an existing one; returns the name it was stored under. */
+  save(file: SourceFile): Promise<string>;
 }
 
 const UPLOADS_TABLE = "response_uploads";
+const UNIQUE_VIOLATION = "23505";
+
+const stamped = (name: string) => `${Date.now()}_${name}`;
 
 /** Local mode: uploads are written into data/ so the CLI and the app both pick them up. */
 class LocalUploadStore implements UploadStore {
@@ -19,8 +24,13 @@ class LocalUploadStore implements UploadStore {
   async list(): Promise<SourceFile[]> {
     return []; // data/ is read directly by the dataset loader
   }
-  async save(file: SourceFile): Promise<void> {
-    fs.writeFileSync(path.join(this.dir, file.name), file.content, "utf8");
+  async count(): Promise<number> {
+    return fs.readdirSync(this.dir).length;
+  }
+  async save(file: SourceFile): Promise<string> {
+    const name = fs.existsSync(path.join(this.dir, file.name)) ? stamped(file.name) : file.name;
+    fs.writeFileSync(path.join(this.dir, name), file.content, { encoding: "utf8", flag: "wx" });
+    return name;
   }
 }
 
@@ -32,9 +42,18 @@ class SupabaseUploadStore implements UploadStore {
     if (error) throw new Error(`Could not load uploads from Supabase: ${error.message}`);
     return (data ?? []).map((r) => ({ name: String(r.name), content: String(r.content) }));
   }
-  async save(file: SourceFile): Promise<void> {
-    const { error } = await this.client.from(UPLOADS_TABLE).upsert({ name: file.name, content: file.content }, { onConflict: "name" });
-    if (error) throw new Error(`Could not save upload to Supabase: ${error.message}`);
+  async count(): Promise<number> {
+    const { count, error } = await this.client.from(UPLOADS_TABLE).select("id", { count: "exact", head: true });
+    if (error) throw new Error(`Could not count uploads in Supabase: ${error.message}`);
+    return count ?? 0;
+  }
+  async save(file: SourceFile): Promise<string> {
+    for (const name of [file.name, stamped(file.name)]) {
+      const { error } = await this.client.from(UPLOADS_TABLE).insert({ name, content: file.content });
+      if (!error) return name;
+      if (error.code !== UNIQUE_VIOLATION) throw new Error(`Could not save upload to Supabase: ${error.message}`);
+    }
+    throw new Error("Could not find a free name for the upload");
   }
 }
 

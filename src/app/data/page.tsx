@@ -57,7 +57,11 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
         </Section>
 
         <Section kicker={storeKind === "supabase" ? "Stored in Supabase" : "Saved to the data folder"} title="Add a new week">
-          <UploadForm needsToken={!!process.env.UPLOAD_TOKEN} />
+          {process.env.VERCEL && !process.env.UPLOAD_TOKEN ? (
+            <p className="rounded-lg border border-dashed border-rule p-4 text-sm text-ink-2">Uploads are switched off on this public demo. Run the tool locally (see README) to add a week.</p>
+          ) : (
+            <UploadForm needsToken={!!process.env.UPLOAD_TOKEN} />
+          )}
           <p className="mt-2 text-xs text-ink-3">Field names, engine names and date formats may differ from earlier files; they are mapped automatically.</p>
         </Section>
       </div>

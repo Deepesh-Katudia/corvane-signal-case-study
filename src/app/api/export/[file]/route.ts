@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getAnalysis, resolvePerspective } from "@/server/analysis";
 import { mentionsCsv, wrongFactsCsv } from "@/engine/export/scoringCsv";
 import { boardReportBuffer } from "@/engine/export/boardReport";
+import { allow, clientIp } from "@/server/rateLimit";
+
+const EXPORTS_PER_MINUTE = 30;
 
 const FILES = {
   "mentions.csv": "text/csv; charset=utf-8",
@@ -12,6 +15,7 @@ const FILES = {
 type ExportName = keyof typeof FILES;
 
 export async function GET(req: Request, { params }: { params: Promise<{ file: string }> }) {
+  if (!allow(`export:${clientIp(req)}`, EXPORTS_PER_MINUTE, 60_000)) return NextResponse.json({ error: "Too many downloads; try again in a minute." }, { status: 429 });
   const { file } = await params;
   if (!(file in FILES)) return NextResponse.json({ error: `Unknown export "${file}"` }, { status: 404 });
   const name = file as ExportName;
