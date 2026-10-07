@@ -1,0 +1,4 @@
+{
+  "_note": "perspective = whose point of view the dashboard opens with. Any brand key from brands.json works (e.g. 'trakvia').",
+  "perspective": "corvane"
+}

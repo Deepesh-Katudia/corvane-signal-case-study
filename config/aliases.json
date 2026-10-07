@@ -1,0 +1,9 @@
+{
+  "_note": "Extra spellings and exclusions on top of the variants generated automatically from brands.json (name, short name, website, spacing/case variants). Add a brand's known misspellings here; no code change needed.",
+  "brands": {
+    "corvane": {
+      "aliases": ["Corvain", "Corvain Fleet"],
+      "exclusions": ["Corvane Logistics"]
+    }
+  }
+}

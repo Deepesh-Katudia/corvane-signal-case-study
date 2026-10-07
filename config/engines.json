@@ -1,0 +1,9 @@
+{
+  "_note": "Engine names vary between exports (e.g. 'chatgpt' vs 'ChatGPT', 'google_ai_overview' vs 'AI Overview'). Matching ignores case, spaces and punctuation.",
+  "engines": [
+    { "canonical": "chatgpt", "label": "ChatGPT", "aliases": ["chatgpt", "chat gpt", "openai", "gpt"] },
+    { "canonical": "perplexity", "label": "Perplexity", "aliases": ["perplexity", "perplexity ai"] },
+    { "canonical": "google_ai_overview", "label": "Google AI Overviews", "aliases": ["google_ai_overview", "ai overview", "ai overviews", "google ai overview", "google ai overviews", "sge"] },
+    { "canonical": "gemini", "label": "Gemini", "aliases": ["gemini", "google gemini"] }
+  ]
+}

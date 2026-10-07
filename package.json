@@ -2,6 +2,7 @@
   "name": "corvane-signal",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Corvane Signal: AI visibility tracker for Corvane Fleet",
   "scripts": {
     "analyze": "tsx scripts/analyze.ts",
