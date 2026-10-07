@@ -15,4 +15,4 @@ The tool finds and handles all of these automatically. The *Data & exports* page
 | **Citations missing or `[]`** | 112 rows | Treated as no citations. Strings like `"None"` or `"[\"…\"]"` and lists of `{url: …}` objects are also accepted. |
 | **"Corvane Logistics"**, an unrelated freight company | 28 answers | Matched as a look-alike and excluded. Sentences about it (including "The company is headquartered in…" right after it) are never attributed to Corvane. |
 
-Other formats accepted for future files: JSON arrays, `{ "responses": [...] }`, CSV, and numbers stored as text (`"week": "7"`). A missing week is inferred from the collection date. A missing run number gets the next free number. Bad lines are reported and skipped; they don't stop the run.
+Other formats accepted for future files: Excel workbooks (first sheet, header row; rich text, hyperlinks and real dates are flattened), JSON arrays, `{ "responses": [...] }`, CSV, and numbers stored as text (`"week": "7"`). A missing week is inferred from the collection date. A missing run number gets the next free number. Bad lines are reported and skipped; they don't stop the run.

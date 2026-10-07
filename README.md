@@ -20,10 +20,11 @@ npm run dev          # analyses data/ and opens the app at http://localhost:3000
 |---|---|
 | `npm run analyze` | Writes `out/mentions.csv`, `out/wrong_facts.csv`, `out/board_report.xlsx` and `out/analysis.json` from everything in `data/` |
 | `npm run analyze -- --data path/to/new_week.jsonl --out results/` | Runs on any file or folder, e.g. unseen data |
-| `npm test` | 124 tests (detection, tone, facts, scoring, formats) |
+| `npm test` | 127 tests (detection, tone, facts, scoring, formats, Excel weeks) |
 | `npm run accuracy` | Re-runs the 15-answer hand check (`-- --sample` prints the sample) |
+| `npm run sample-week` | Regenerates `samples/week7_answers.xlsx`, a fictional next week for trying out "add a week" |
 
-**Adding a new week needs no code changes.** Drop the file into `data/` (any name, `.jsonl`, `.json` or `.csv`), or upload it on the *Data & exports* page. Field names, engine names, ID casing and date formats are mapped automatically. See [Data quality](docs/DATA_QUALITY.md).
+**Adding a new week needs no code changes.** Drop the file into `data/` (any name: Excel `.xlsx`, `.csv`, `.jsonl` or `.json`), or upload it on the *Data & exports* page. To try it, use `samples/week7_answers.xlsx`: a fictional week 7 in an Excel layout with new quirks ("W7" week labels, a "Trak-Via" spelling, a timeout, new wrong facts). Its second sheet is the answer key, and a test checks the tool agrees with it. `samples/board_report_weeks_1-7.xlsx` shows the board report after adding it. Field names, engine names, ID casing and date formats are mapped automatically. See [Data quality](docs/DATA_QUALITY.md).
 
 **No API keys, accounts or databases.** Everything runs on your laptop with rules and open-source libraries. Nothing calls an AI service or any other paid API, and there is no `.env` to fill in.
 
@@ -38,7 +39,7 @@ npm run dev          # analyses data/ and opens the app at http://localhost:3000
 | **Sources** | marketing | Which sites the engines cite and who appears next to them; sites citing competitors but never Corvane; where Corvane is under-represented |
 | **Data & exports** | Priya | Board report (Excel), scoring CSVs, week coverage, every data problem handled, upload |
 
-**Viewing as** (top right) shows the whole market from Trakvia's, Routelyne's or Gridwell's side. It's also configurable in `config/settings.json`, and new competitors can be added in `config/brands.json`. No code changes needed.
+**Whose view.** The dashboard is Corvane's, so Marcus and Priya only ever see Corvane's view. To run the same tool for a competitor's view of the market, an operator sets `"perspective": "trakvia"` in `config/settings.json`. New competitors are added in `config/brands.json`. Both are configuration changes, not code changes.
 
 ## How the score works
 

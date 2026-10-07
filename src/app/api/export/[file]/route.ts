@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAnalysis, resolvePerspective } from "@/server/analysis";
+import { getAnalysis } from "@/server/analysis";
 import { mentionsCsv, wrongFactsCsv } from "@/engine/export/scoringCsv";
 import { boardReportBuffer } from "@/engine/export/boardReport";
 import { allow, clientIp } from "@/server/rateLimit";
@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ file: st
   if (!(file in FILES)) return NextResponse.json({ error: `Unknown export "${file}"` }, { status: 404 });
   const name = file as ExportName;
   const { result, config } = await getAnalysis();
-  const focus = resolvePerspective(result, new URL(req.url).searchParams.get("as") ?? undefined);
+  const focus = result.perspective;
   const body =
     name === "mentions.csv"
       ? mentionsCsv(result.responses)

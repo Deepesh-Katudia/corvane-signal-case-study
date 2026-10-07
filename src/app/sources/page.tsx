@@ -1,11 +1,11 @@
-import { getAnalysis, resolvePerspective } from "@/server/analysis";
+import { getAnalysis } from "@/server/analysis";
 import { competitorOnlySources, underIndexedSources } from "@/engine/score/sources";
 import { Section } from "@/components/ui";
 import { pct } from "@/lib/format";
 
-export default async function SourcesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function SourcesPage() {
   const { result } = await getAnalysis();
-  const focus = resolvePerspective(result, (await searchParams).as);
+  const focus = result.perspective;
   const name = (k: string) => result.brands.find((b) => b.key === k)?.name ?? k;
   const tracked = result.brands.filter((b) => b.tier !== "other");
   const competitors = tracked.filter((b) => b.key !== focus).map((b) => b.key);

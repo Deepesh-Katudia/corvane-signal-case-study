@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
-import { PerspectiveSwitch } from "@/components/PerspectiveSwitch";
 import { getAnalysis } from "@/server/analysis";
 
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
@@ -22,7 +21,6 @@ const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { result } = await getAnalysis();
   const client = result.brands.find((b) => b.tier === "client")!;
-  const tracked = result.brands.filter((b) => b.tier !== "other").map((b) => ({ key: b.key, name: b.name }));
   const latest = result.weeks.find((w) => w.week === result.latestWeek);
 
   return (
@@ -42,9 +40,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="double-rule mt-3 flex flex-wrap items-center justify-between gap-3 pt-3">
               <Suspense>
                 <Nav />
-              </Suspense>
-              <Suspense>
-                <PerspectiveSwitch brands={tracked} client={client.key} />
               </Suspense>
             </div>
           </header>

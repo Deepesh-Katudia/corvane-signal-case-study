@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { getAnalysis, resolvePerspective } from "@/server/analysis";
+import { getAnalysis } from "@/server/analysis";
 import { buildBrief, factLabel, truthText } from "@/engine/insights/brief";
 import { ScoreCards } from "@/components/ScoreCards";
 import { TrendChart } from "@/components/TrendChart";
 import { Card, Empty, Section } from "@/components/ui";
-import { withAs } from "@/lib/format";
 
-export default async function MondayPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function MondayPage() {
   const { result } = await getAnalysis();
-  const focus = resolvePerspective(result, (await searchParams).as);
+  const focus = result.perspective;
   const brief = buildBrief(result, focus);
   const client = result.perspective;
   const trend = result.trend;
@@ -79,7 +78,7 @@ export default async function MondayPage({ searchParams }: { searchParams: Promi
           kicker="Wrong-fact alerts"
           title={`What AI gets wrong about ${brief.focusName}`}
           aside={
-            <Link className="link text-sm" href={withAs("/facts", focus, client)}>
+            <Link className="link text-sm" href={"/facts"}>
               All alerts →
             </Link>
           }

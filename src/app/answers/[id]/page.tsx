@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAnalysis, resolvePerspective } from "@/server/analysis";
+import { getAnalysis } from "@/server/analysis";
 import { Card, Section, ToneChip } from "@/components/ui";
-import { STAGE_LABEL, TONE_VAR, withAs } from "@/lib/format";
+import { STAGE_LABEL, TONE_VAR } from "@/lib/format";
 import { factLabel, truthText } from "@/engine/insights/brief";
 import type { AnalyzedResponse } from "@/engine/types";
 
@@ -28,10 +28,10 @@ function Highlighted({ r }: { r: AnalyzedResponse }) {
   return <div className="whitespace-pre-wrap font-serif text-lg leading-relaxed">{parts}</div>;
 }
 
-export default async function AnswerPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function AnswerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { result } = await getAnalysis();
-  const focus = resolvePerspective(result, (await searchParams).as);
+  const focus = result.perspective;
   const r = result.responses.find((x) => x.responseId === id);
   if (!r) notFound();
   const prompt = result.prompts.find((p) => p.id === r.promptId);
@@ -42,7 +42,7 @@ export default async function AnswerPage({ params, searchParams }: { params: Pro
   return (
     <div className="space-y-8 pt-4">
       <header className="rise">
-        <Link className="link text-sm text-ink-2" href={withAs(`/questions?week=${r.week}&prompt=${r.promptId}`, focus, result.perspective)}>
+        <Link className="link text-sm text-ink-2" href={`/questions?week=${r.week}&prompt=${r.promptId}`}>
           ← All answers to this question
         </Link>
         <p className="kicker mt-4">

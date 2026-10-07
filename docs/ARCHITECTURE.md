@@ -1,7 +1,7 @@
 # Architecture
 
 ```
-data/*.jsonl|json|csv   (bundled weeks + weeks uploaded through the app)
+data/*.xlsx|csv|jsonl|json   (bundled weeks + weeks uploaded through the app)
                        ▼
  ingest/   parseFile → normalizeRecords → Dataset      (field aliases, dedupe, dates, coverage)
                        ▼
@@ -27,7 +27,7 @@ data/*.jsonl|json|csv   (bundled weeks + weeks uploaded through the app)
 **Principles**
 - **The engine is pure TypeScript.** `src/engine/**` has no I/O except the config and dataset loaders. The CLI, the web app and the tests all call the same functions.
 - **Everything that's graded is deterministic.** No network calls and no LLM are involved. The permutation test uses a seeded random number generator, so the same data always gives the same verdicts.
-- **Configuration over code.** Brands, extra spellings, look-alikes, engines, scoring weights and the default perspective all live in `config/`. To add a competitor, add it to `config/brands.json` (and optionally `facts.json` and `aliases.json`). To view the market as Trakvia, use `?as=trakvia` in the app or set `"perspective": "trakvia"` in `config/settings.json`.
+- **Configuration over code.** Brands, extra spellings, look-alikes, engines, scoring weights and the default perspective all live in `config/`. To add a competitor, add it to `config/brands.json` (and optionally `facts.json` and `aliases.json`). To view the market as Trakvia, set `"perspective": "trakvia"` in `config/settings.json`.
 - **Local files only.** Every week is a raw file in `data/`, and uploads through the app are saved there too. No database, no API keys, no network. The analysis is recomputed from the raw files whenever their contents change. On this data that takes about 1–2 s, so no derived tables need migrating when the rules improve.
 
-**Tests** (`npm test`, 124): ingest edge cases, every name variant, look-alike exclusion, brief tone examples plus every template family, fact contradiction vs unverified, the noise test, the incomplete-week rule, export format, and a new-format week end to end.
+**Tests** (`npm test`, 127): ingest edge cases, every name variant, look-alike exclusion, brief tone examples plus every template family, fact contradiction vs unverified, the noise test, the incomplete-week rule, export format, and a new-format week end to end.

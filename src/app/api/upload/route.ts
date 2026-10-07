@@ -5,9 +5,10 @@ import { DATA_DIR, getAnalysis, invalidateAnalysis } from "@/server/analysis";
 import { allow, clientIp } from "@/server/rateLimit";
 import { buildDataset } from "@/engine/ingest/loadDataset";
 import { loadConfig } from "@/engine/config/loadConfig";
+import { isXlsx, xlsxToJson } from "@/engine/ingest/xlsx";
 
 const MAX_BYTES = 4 * 1024 * 1024;
-const ALLOWED = /\.(jsonl|ndjson|json|csv)$/i;
+const ALLOWED = /\.(jsonl|ndjson|json|csv|xlsx)$/i;
 const UPLOADS_PER_MINUTE = 10;
 
 const fail = (status: number, error: string) => NextResponse.json({ ok: false, error }, { status });
@@ -31,18 +32,24 @@ export async function POST(req: Request) {
   }
   const file = form.get("file");
   if (!(file instanceof File)) return fail(400, "No file attached.");
-  if (!ALLOWED.test(file.name)) return fail(400, "Use a .jsonl, .json or .csv file of AI answers.");
+  if (!ALLOWED.test(file.name)) return fail(400, "Use an .xlsx, .csv, .jsonl or .json file of AI answers.");
   if (/^prompts?\.csv$/i.test(file.name)) return fail(400, "That looks like the questions file; upload a responses file.");
   if (file.size > MAX_BYTES) return fail(413, "File is larger than 4 MB.");
 
-  const content = await file.text();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let content: string;
+  try {
+    content = isXlsx(file.name) ? await xlsxToJson(bytes) : new TextDecoder().decode(bytes);
+  } catch {
+    return fail(422, "Could not read that spreadsheet; save it as .xlsx (Excel workbook) and try again.");
+  }
   const probe = buildDataset([{ name: file.name, content }], null, loadConfig().engines);
   if (!probe.responses.length) {
     return fail(422, `No usable answers found (${probe.issues.slice(0, 3).map((i) => i.detail).join("; ") || "empty file"}).`);
   }
 
   try {
-    fs.writeFileSync(path.join(DATA_DIR, targetName(file.name)), content, { encoding: "utf8", flag: "wx" });
+    fs.writeFileSync(path.join(DATA_DIR, targetName(file.name)), bytes, { flag: "wx" });
   } catch (err) {
     console.error("[upload] save failed:", (err as Error).message);
     return fail(500, "Could not save the file into the data folder.");

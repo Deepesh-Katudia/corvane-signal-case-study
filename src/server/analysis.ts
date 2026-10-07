@@ -15,7 +15,7 @@ let cache: { key: string; result: AnalysisResult; config: AppConfig } | null = n
 /** Analysis of every answer file in data/ (including uploaded weeks); recomputed only when the files change. */
 export async function getAnalysis(): Promise<{ result: AnalysisResult; config: AppConfig }> {
   const config = loadConfig(CONFIG_DIR);
-  const local = readSourceFiles(DATA_DIR);
+  const local = await readSourceFiles(DATA_DIR);
   const files = local.responses;
   const key = createHash("sha1")
     .update(JSON.stringify(config))
@@ -31,8 +31,3 @@ export function invalidateAnalysis(): void {
   cache = null;
 }
 
-/** Perspective from ?as=, falling back to the configured client. Unknown values are ignored. */
-export function resolvePerspective(result: AnalysisResult, as: string | string[] | undefined): string {
-  const v = Array.isArray(as) ? as[0] : as;
-  return result.brands.some((b) => b.key === v && b.tier !== "other") ? v! : result.perspective;
-}

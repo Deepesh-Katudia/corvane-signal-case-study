@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { getAnalysis, resolvePerspective } from "@/server/analysis";
+import { getAnalysis } from "@/server/analysis";
 import { buildBrief, factLabel, truthText, type FactAlert } from "@/engine/insights/brief";
 import { Card, Empty, Section } from "@/components/ui";
-import { withAs } from "@/lib/format";
 
-export default async function FactsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function FactsPage() {
   const { result } = await getAnalysis();
-  const focus = resolvePerspective(result, (await searchParams).as);
+  const focus = result.perspective;
   const brief = buildBrief(result, focus);
   const name = (k: string) => result.brands.find((b) => b.key === k)?.name ?? k;
   const engineName = (e: string) => result.engines.find((x) => x.canonical === e)?.label ?? e;
@@ -29,7 +28,7 @@ export default async function FactsPage({ searchParams }: { searchParams: Promis
       <p className="mt-2 text-xs text-ink-3">Engines: {a.engines.map(engineName).join(", ")}</p>
       <p className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-xs">
         {a.responseIds.slice(0, 8).map((id) => (
-          <Link key={id} className="link num" href={withAs(`/answers/${id}`, focus, result.perspective)}>
+          <Link key={id} className="link num" href={`/answers/${id}`}>
             {id}
           </Link>
         ))}

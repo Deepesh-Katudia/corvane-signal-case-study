@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   const dataPath = path.resolve(arg("data", "data"));
   const outDir = path.resolve(arg("out", "out"));
   const config = loadConfig(path.resolve(arg("config", "config")));
-  const dataset = loadDataset(dataPath, config.engines);
+  const dataset = await loadDataset(dataPath, config.engines);
   const result = runAnalysis(dataset, config);
 
   fs.mkdirSync(outDir, { recursive: true });

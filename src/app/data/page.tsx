@@ -1,4 +1,4 @@
-import { getAnalysis, resolvePerspective } from "@/server/analysis";
+import { getAnalysis } from "@/server/analysis";
 import { UploadForm } from "@/components/UploadForm";
 import { Card, Section } from "@/components/ui";
 import { pct } from "@/lib/format";
@@ -15,12 +15,11 @@ const ISSUE_LABEL: Record<string, string> = {
   missing_field: "Missing fields filled in or skipped",
 };
 
-export default async function DataPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function DataPage() {
   const { result } = await getAnalysis();
-  const focus = resolvePerspective(result, (await searchParams).as);
+  const focus = result.perspective;
   const engineName = (e: string) => result.engines.find((x) => x.canonical === e)?.label ?? e;
   const byKind = [...new Map(result.issues.map((i) => [i.kind, result.issues.filter((x) => x.kind === i.kind)])).entries()];
-  const asQ = focus !== result.perspective ? `?as=${focus}` : "";
 
   return (
     <div className="space-y-10 pt-4">
@@ -33,7 +32,7 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
         <Section kicker="For the board report" title="Downloads">
           <ul className="space-y-2 text-sm">
             <li>
-              <a className="link font-medium" href={`/api/export/board_report.xlsx${asQ}`}>
+              <a className="link font-medium" href={`/api/export/board_report.xlsx`}>
                 Board report (Excel)
               </a>
               <span className="text-ink-2">: summary, weekly trend, questions, engines, wrong facts, sources and data notes on separate sheets.</span>

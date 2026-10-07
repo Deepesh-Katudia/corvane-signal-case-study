@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { getAnalysis, resolvePerspective } from "@/server/analysis";
+import { getAnalysis } from "@/server/analysis";
 import { Filters } from "@/components/Filters";
 import { Empty, Section, ToneChip } from "@/components/ui";
-import { STAGE_LABEL, TONE_LABEL, TONE_VAR, pct, withAs } from "@/lib/format";
+import { STAGE_LABEL, TONE_LABEL, TONE_VAR, pct } from "@/lib/format";
 import type { AnalyzedResponse } from "@/engine/types";
 
 type SP = Record<string, string | string[] | undefined>;
@@ -31,7 +31,7 @@ function RunDots({ runs, brand }: { runs: AnalyzedResponse[]; brand: string }) {
 export default async function QuestionsPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const { result } = await getAnalysis();
-  const focus = resolvePerspective(result, sp.as);
+  const focus = result.perspective;
   const name = (k: string) => result.brands.find((b) => b.key === k)?.name ?? k;
   const engines = [...new Set(result.responses.map((r) => r.engine))].sort();
   const engineName = (e: string) => result.engines.find((x) => x.canonical === e)?.label ?? e;
@@ -55,7 +55,6 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
   const matrixWeekAnswers = result.responses.filter((r) => week === "all" || String(r.week) === week);
   const recentWeeks = result.weeks.map((w) => w.week).slice(-4);
   const question = new Map(result.prompts.map((p) => [p.id, p]));
-  const hidden: Record<string, string> = focus !== result.perspective ? { as: focus } : {};
 
   return (
     <div className="space-y-8 pt-4">
@@ -69,7 +68,6 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
       </header>
 
       <Filters
-        hidden={hidden}
         filters={[
           { name: "week", label: "Week", value: week, options: [...result.weeks.map((w) => ({ value: String(w.week), label: `Week ${w.week}${w.partial ? " (incomplete)" : ""}` })), { value: "all", label: "All weeks" }] },
           { name: "engine", label: "Engine", value: engine, options: [{ value: "", label: "All engines" }, ...engines.map((e) => ({ value: e, label: engineName(e) }))] },
@@ -119,7 +117,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                 return (
                   <tr key={p.id} className="border-b border-rule/60 last:border-0 hover:bg-paper-2/50">
                     <td className="p-3">
-                      <Link className="link" href={withAs(`/questions?week=${week}&prompt=${p.id}`, focus, result.perspective)}>
+                      <Link className="link" href={`/questions?week=${week}&prompt=${p.id}`}>
                         {p.question}
                       </Link>
                       <div className="text-xs text-ink-3">{STAGE_LABEL[p.stage] ?? p.stage}</div>
@@ -149,7 +147,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
               const wrong = r.claims.filter((c) => c.verdict === "wrong").length;
               return (
                 <li key={r.responseId}>
-                  <Link href={withAs(`/answers/${r.responseId}`, focus, result.perspective)} className="grid gap-2 p-3 transition-colors hover:bg-paper-2/60 sm:grid-cols-[6rem_1fr_auto] sm:items-center">
+                  <Link href={`/answers/${r.responseId}`} className="grid gap-2 p-3 transition-colors hover:bg-paper-2/60 sm:grid-cols-[6rem_1fr_auto] sm:items-center">
                     <span className="num text-xs text-ink-3">
                       W{r.week} · {engineName(r.engine)} · run {r.run}
                     </span>

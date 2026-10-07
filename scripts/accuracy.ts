@@ -26,7 +26,7 @@ interface HandLabel {
 
 const config = loadConfig();
 const ctx = createContext(config);
-const dataset = loadDataset("data", config.engines);
+const dataset = await loadDataset("data", config.engines);
 const answered = dataset.responses.filter((r) => r.ok);
 
 function sample(): AnalyzedResponse[] {

@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "accuracy": "tsx scripts/accuracy.ts"
+    "accuracy": "tsx scripts/accuracy.ts",
+    "sample-week": "tsx scripts/make-sample-week.ts"
   },
   "dependencies": {
     "csv-parse": "^7.0.3",

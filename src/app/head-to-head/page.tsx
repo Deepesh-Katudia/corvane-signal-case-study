@@ -1,4 +1,4 @@
-import { getAnalysis, resolvePerspective } from "@/server/analysis";
+import { getAnalysis } from "@/server/analysis";
 import { Filters } from "@/components/Filters";
 import { Empty, Section } from "@/components/ui";
 
@@ -8,7 +8,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 export default async function HeadToHeadPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const { result } = await getAnalysis();
-  const focus = resolvePerspective(result, sp.as);
+  const focus = result.perspective;
   const week = Number(one(sp.week) || result.latestWeek);
   const scope = one(sp.scope) || "focus";
   const name = (k: string) => result.brands.find((b) => b.key === k)?.name ?? k;
@@ -22,7 +22,6 @@ export default async function HeadToHeadPage({ searchParams }: { searchParams: P
   const swaps = result.replacements.filter((r) => r.week === week && (scope === "all" || r.dropped === focus));
   const question = (id: string) => result.prompts.find((p) => p.id === id)?.question ?? id;
   const weekInfo = result.weeks.find((w) => w.week === week);
-  const hidden: Record<string, string> = focus !== result.perspective ? { as: focus } : {};
 
   return (
     <div className="space-y-8 pt-4">
@@ -36,7 +35,6 @@ export default async function HeadToHeadPage({ searchParams }: { searchParams: P
       </header>
 
       <Filters
-        hidden={hidden}
         filters={[
           { name: "week", label: "Week", value: String(week), options: result.weeks.map((w) => ({ value: String(w.week), label: `Week ${w.week}${w.partial ? " (incomplete)" : ""}` })) },
           { name: "scope", label: "Drop-outs for", value: scope, options: [{ value: "focus", label: name(focus) }, { value: "all", label: "All companies" }] },

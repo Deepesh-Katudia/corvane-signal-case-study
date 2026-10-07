@@ -33,7 +33,3 @@ export const signed = (n: number | null | undefined, digits = 1): string =>
 
 export const pct = (x: number, digits = 0): string => `${(x * 100).toFixed(digits)}%`;
 
-export function withAs(href: string, as: string, client: string): string {
-  if (as === client) return href;
-  return `${href}${href.includes("?") ? "&" : "?"}as=${encodeURIComponent(as)}`;
-}
