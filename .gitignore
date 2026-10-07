@@ -12,3 +12,4 @@ next-env.d.ts
 docs/AI-Native_Developer_Case_Study_Corvane_Fleet.pdf
 docs/corvane_data_pack/
 scripts/_*.ts
+supabase/.temp/

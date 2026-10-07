@@ -147,7 +147,9 @@ I also reviewed the output against the data. Separate code-review and security-r
 
 ## Deployment
 
-Deployed on Vercel (Next.js) with Supabase for uploaded weeks. Uploads on the public deployment require `UPLOAD_TOKEN`. Security headers, rate limits and insert-only storage are in place (see `next.config.ts` and `src/app/api/upload/route.ts`).
+**Live:** https://corvane-signal.vercel.app (uploads are switched off on the public demo unless `UPLOAD_TOKEN` and Supabase are configured).
+
+Deployed on Vercel (Next.js); Supabase stores uploaded weeks when configured. Uploads on the public deployment require `UPLOAD_TOKEN`. Security headers, rate limits and insert-only storage are in place (see `next.config.ts` and `src/app/api/upload/route.ts`).
 
 ## Project layout
 
