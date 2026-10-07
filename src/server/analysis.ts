@@ -4,7 +4,6 @@ import { createHash } from "node:crypto";
 import { loadConfig } from "@/engine/config/loadConfig";
 import { buildDataset, readSourceFiles } from "@/engine/ingest/loadDataset";
 import { runAnalysis, type AnalysisResult } from "@/engine/pipeline";
-import { getUploadStore } from "@/store/uploadStore";
 import type { AppConfig } from "@/engine/types";
 
 const ROOT = process.cwd();
@@ -13,13 +12,11 @@ const CONFIG_DIR = path.join(ROOT, "config");
 
 let cache: { key: string; result: AnalysisResult; config: AppConfig } | null = null;
 
-/** Analysis of bundled data plus any uploaded weeks; recomputed only when the inputs change. */
+/** Analysis of every answer file in data/ (including uploaded weeks); recomputed only when the files change. */
 export async function getAnalysis(): Promise<{ result: AnalysisResult; config: AppConfig }> {
   const config = loadConfig(CONFIG_DIR);
   const local = readSourceFiles(DATA_DIR);
-  const uploads = await getUploadStore(DATA_DIR).list();
-  const localNames = new Set(local.responses.map((f) => f.name));
-  const files = [...local.responses, ...uploads.filter((u) => !localNames.has(u.name))];
+  const files = local.responses;
   const key = createHash("sha1")
     .update(JSON.stringify(config))
     .update(files.map((f) => `${f.name}:${f.content.length}:${createHash("sha1").update(f.content).digest("hex")}`).join("|"))

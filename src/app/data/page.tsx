@@ -1,6 +1,4 @@
 import { getAnalysis, resolvePerspective } from "@/server/analysis";
-import { getUploadStore } from "@/store/uploadStore";
-import { DATA_DIR } from "@/server/analysis";
 import { UploadForm } from "@/components/UploadForm";
 import { Card, Section } from "@/components/ui";
 import { pct } from "@/lib/format";
@@ -22,7 +20,6 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
   const focus = resolvePerspective(result, (await searchParams).as);
   const engineName = (e: string) => result.engines.find((x) => x.canonical === e)?.label ?? e;
   const byKind = [...new Map(result.issues.map((i) => [i.kind, result.issues.filter((x) => x.kind === i.kind)])).entries()];
-  const storeKind = getUploadStore(DATA_DIR).kind;
   const asQ = focus !== result.perspective ? `?as=${focus}` : "";
 
   return (
@@ -56,13 +53,11 @@ export default async function DataPage({ searchParams }: { searchParams: Promise
           </ul>
         </Section>
 
-        <Section kicker={storeKind === "supabase" ? "Stored in Supabase" : "Saved to the data folder"} title="Add a new week">
-          {process.env.VERCEL && !process.env.UPLOAD_TOKEN ? (
-            <p className="rounded-lg border border-dashed border-rule p-4 text-sm text-ink-2">Uploads are switched off on this public demo. Run the tool locally (see README) to add a week.</p>
-          ) : (
-            <UploadForm needsToken={!!process.env.UPLOAD_TOKEN} />
-          )}
-          <p className="mt-2 text-xs text-ink-3">Field names, engine names and date formats may differ from earlier files; they are mapped automatically.</p>
+        <Section kicker="Saved to the data folder" title="Add a new week">
+          <UploadForm />
+          <p className="mt-2 text-xs text-ink-3">
+            Or copy the file into <code>data/</code>. Field names, engine names and date formats may differ from earlier files; they are mapped automatically.
+          </p>
         </Section>
       </div>
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 type Status = { kind: "idle" } | { kind: "busy" } | { kind: "ok"; text: string } | { kind: "error"; text: string };
 
-export function UploadForm({ needsToken }: { needsToken: boolean }) {
+export function UploadForm() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
@@ -32,12 +32,6 @@ export function UploadForm({ needsToken }: { needsToken: boolean }) {
         <span className="kicker mb-1 block">New week of answers (.jsonl, .json or .csv)</span>
         <input name="file" type="file" required accept=".jsonl,.ndjson,.json,.csv" className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-1.5 file:text-paper" />
       </label>
-      {needsToken && (
-        <label className="block text-sm">
-          <span className="kicker mb-1 block">Upload token</span>
-          <input name="token" type="password" required className="w-full rounded-md border border-rule bg-paper px-2 py-1.5" />
-        </label>
-      )}
       <button disabled={status.kind === "busy"} className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-50">
         {status.kind === "busy" ? "Analysing…" : "Upload and analyse"}
       </button>

@@ -17,10 +17,8 @@
     "accuracy": "tsx scripts/accuracy.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.3",
     "csv-parse": "^7.0.3",
     "exceljs": "^4.4.0",
-    "langsmith": "^0.10.8",
     "next": "^16.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

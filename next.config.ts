@@ -23,8 +23,6 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
-  // Data files and config are read at runtime by server components and route handlers.
-  outputFileTracingIncludes: { "/**": ["./data/**", "./config/**"] },
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

@@ -98,3 +98,7 @@ Then the code-reviewer and security-reviewer agents run over the result, and the
 ## Needed from the user during build
 - Keys in `.env.local`: OpenRouter, LangSmith, Supabase project URL and keys. Vercel login for deploy.
 - Your name for the README and the submission subject line, and confirmation that git `user.name`/`user.email` are set to you.
+
+## Revision (2026-10-07)
+
+After re-reading the brief's "no paid APIs in the tool itself" rule, the optional OpenRouter/LangSmith summary and the Supabase upload store were removed. Corvane Signal is now a laptop-only tool: rules engine, local `data/` folder, no keys.

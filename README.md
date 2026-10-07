@@ -25,10 +25,7 @@ npm run dev          # analyses data/ and opens the app at http://localhost:3000
 
 **Adding a new week needs no code changes.** Drop the file into `data/` (any name, `.jsonl`, `.json` or `.csv`), or upload it on the *Data & exports* page. Field names, engine names, ID casing and date formats are mapped automatically. See [Data quality](docs/DATA_QUALITY.md).
 
-**Nothing paid is needed.** All analysis is rules plus open-source code and runs offline. Optional extras, all off by default (see `.env.example`):
-- `OPENROUTER_API_KEY` adds a short AI-written summary under the suggested actions. It only rephrases numbers the rules already produced, and the brief is complete without it. Traced in LangSmith if `LANGSMITH_API_KEY` is set.
-- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` store uploaded weeks in Supabase (used by the deployed version). Apply `supabase/migrations/*.sql` first.
-- `UPLOAD_TOKEN` protects uploads on a public deployment. Without it, uploads are disabled on Vercel.
+**No API keys, accounts or databases.** Everything runs on your laptop with rules and open-source libraries. Nothing calls an AI service or any other paid API, and there is no `.env` to fill in.
 
 ## What's in the app
 
@@ -83,7 +80,7 @@ What the data says today:
 1. **The graded core first:** detection, position, tone, wrong facts, the exact CSV format, and handling the messy data. Wrong answers here make every later screen wrong, and the export is checked against an answer key on unseen data. That's why the engine is plain rules, deterministic, and tested on formats the data pack doesn't contain.
 2. **A score that tells the truth about uncertainty.** Marcus asked for "one number" but also "why it moved". With two runs per question, weekly moves are mostly noise, so the tool says that rather than inventing stories. It explains the moves that are real.
 3. **The Monday screen**, then Priya's detail view, because they turn numbers into decisions.
-4. **All stretch items,** in order of usefulness: competitor fact-checking (cheap once the fact engine existed, and directly useful to sales), head-to-head, sources, no hard-coding, board report, deployment.
+4. **All stretch items,** in order of usefulness: competitor fact-checking (cheap once the fact engine existed, and directly useful to sales), head-to-head, sources, no hard-coding, board report. A hosted deployment was left out: the brief values one local command, and a local tool needs no accounts or keys.
 
 Deliberately left out:
 - **Sentiment models and LLM labelling.** The brief rules out paid APIs, and rules are explainable and auditable.
@@ -118,7 +115,7 @@ I built this with **Claude Code** as a pair programmer. It read the brief and pr
 I also reviewed the output against the data. Separate code-review and security-review passes were run as well, and their findings were fixed (commit history shows each step).
 
 **What it got wrong, and how it was fixed:**
-- **It wanted to use the OpenRouter models for tone and fact extraction.** That contradicts the brief's no-paid-API rule and would fail on the graders' unseen data. Rules became the core, and the LLM became an optional summary only.
+- **It wanted to use the OpenRouter models for tone and fact extraction.** That contradicts the brief's no-paid-API rule and would fail on the graders' unseen data. Rules became the whole engine. An optional AI-written summary (via OpenRouter, with LangSmith tracing) and Supabase storage for a hosted version were built and then removed again, to keep the tool strictly local and free of paid APIs.
 - **Its first plan quoted the wrong response ID** for the "Columbus, Georgia" example, and expected 507 unique answers instead of 510. Both were caught by running the code against the data.
 - **A scripted regex edit silently inserted control characters** (a `\b` became a backspace), which broke patterns without failing the type check. I found it by grepping for control characters and added that check to my workflow.
 - **The sentence splitter's list-number guard** stopped "available 24/7. Another provider…" from splitting.
@@ -130,7 +127,7 @@ I also reviewed the output against the data. Separate code-review and security-r
 
 ## Running this every day for 20 clients
 
-**Shape.** Each client gets a config (brands, aliases, facts, questions). A scheduler collects answers from each engine's API on a set cadence, writes raw JSONL to object storage (one file per client, engine and day), and runs the same pipeline. Results go to Postgres (Supabase) for the app. Analysis is pure CPU and cheap: about 2 seconds for 500 answers, so 20 clients fit on one small worker.
+**Shape.** Each client gets a config (brands, aliases, facts, questions). A scheduler collects answers from each engine's API on a set cadence, writes raw JSONL to object storage (one file per client, engine and day), and runs the same pipeline. Results go to Postgres for the app. Analysis is pure CPU and cheap: about 2 seconds for 500 answers, so 20 clients fit on one small worker.
 
 **Cost.** Collection dominates. 20 clients × ~30 questions × 4 engines × 2 runs a day is about 4,800 queries a day, roughly 150k a month. At typical API or search-grounded prices of about $0.002–0.01 per query, that's about $300–1,500 a month, depending on engines and models. Compute is about $20–50 a month, and storage is negligible. To cut costs:
 - run high-priority questions daily and the rest weekly
@@ -145,11 +142,9 @@ I also reviewed the output against the data. Separate code-review and security-r
 - **Incomplete weeks never become false drops**, because comparisons are like-for-like.
 - **Regression tests catch drift.** A small "golden set" of hand-labelled answers per engine is re-run in CI, so a parser or lexicon change that alters labels is caught before release. New phrasings found in alerts are added to the lexicon with a test.
 
-## Deployment
+## Safety
 
-**Live:** https://corvane-signal.vercel.app (uploads are switched off on the public demo unless `UPLOAD_TOKEN` and Supabase are configured).
-
-Deployed on Vercel (Next.js); Supabase stores uploaded weeks when configured. Uploads on the public deployment require `UPLOAD_TOKEN`. Security headers, rate limits and insert-only storage are in place (see `next.config.ts` and `src/app/api/upload/route.ts`).
+Uploads are validated by parsing them before they are saved into `data/`. They are limited to 4 MB, never overwrite an existing file, and are rate-limited. Security headers are set in `next.config.ts`.
 
 ## Project layout
 

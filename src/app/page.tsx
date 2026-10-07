@@ -3,7 +3,6 @@ import { getAnalysis, resolvePerspective } from "@/server/analysis";
 import { buildBrief, factLabel, truthText } from "@/engine/insights/brief";
 import { ScoreCards } from "@/components/ScoreCards";
 import { TrendChart } from "@/components/TrendChart";
-import { NarrativePanel } from "@/components/NarrativePanel";
 import { Card, Empty, Section } from "@/components/ui";
 import { withAs } from "@/lib/format";
 
@@ -127,7 +126,6 @@ export default async function MondayPage({ searchParams }: { searchParams: Promi
             </li>
           ))}
         </ol>
-        <NarrativePanel focus={focus} />
       </Section>
 
       <Section kicker="Six-week view" title="Visibility score by week">
