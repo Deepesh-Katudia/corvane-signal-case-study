@@ -41,28 +41,44 @@ function clauseBefore(sentence: string, at: number): string {
   return before.slice(cut);
 }
 
+/** Items of one list ("GPS tracking, ELD compliance, and dashcams") share the list's verb. */
+const LIST_GAP = /^\s*(?:,\s*)?(?:(?:and|or|&|plus)\s+)?(?:built-in\s+|native\s+|ai\s+)?$/i;
+const VERB_AT = /\b(?:handles?|includes?|offers?|supports?|provides?|has|have|comes|ships|features|bundles|doesn|does|don|do|cannot|can|won|lacks?|without|no)\b/i;
+
+function directValue(sentence: string, index: number, length: number): boolean | null | "buyer" {
+  const before = clauseBefore(sentence, index);
+  const after = sentence.slice(index + length);
+  let value: boolean | null = null;
+  if (DENY_BEFORE.test(before) || DENY_AFTER.test(after)) value = false;
+  else if (ASSERT_BEFORE.test(before) || ASSERT_AFTER.test(after)) value = true;
+  if (value === null) return null;
+  const verbAt = before.search(VERB_AT);
+  return verbAt >= 0 && BUYER_CONTEXT.test(before.slice(0, verbAt)) ? "buyer" : value;
+}
+
 export function extractFeatureClaims(sentence: string): RawClaim[] {
+  const matches = Object.entries(FEATURE_PATTERNS)
+    .flatMap(([feature, pattern]) => [...sentence.matchAll(pattern)].map((m) => ({ feature, index: m.index!, end: m.index! + m[0].length })))
+    .sort((a, b) => a.index - b.index);
   const claims: RawClaim[] = [];
-  for (const [feature, pattern] of Object.entries(FEATURE_PATTERNS)) {
-    for (const m of sentence.matchAll(pattern)) {
-      const before = clauseBefore(sentence, m.index!);
-      const after = sentence.slice(m.index! + m[0].length);
-      let value: boolean | null = null;
-      if (DENY_BEFORE.test(before) || DENY_AFTER.test(after)) value = false;
-      else if (ASSERT_BEFORE.test(before) || ASSERT_AFTER.test(after)) value = true;
-      if (value === null) continue;
-      const verbAt = before.search(/\b(?:handles?|includes?|offers?|supports?|provides?|has|have|comes|ships|features|bundles|doesn|does|don|do|cannot|can|won|lacks?|without|no)\b/i);
-      if (verbAt >= 0 && BUYER_CONTEXT.test(before.slice(0, verbAt))) continue;
-      claims.push({ factKey: `features.${feature}`, value: String(value), at: m.index! });
-      break; // one claim per feature per sentence
-    }
+  const seen = new Set<string>();
+  let prev: { end: number; value: boolean | null } | null = null;
+  for (const m of matches) {
+    const direct = directValue(sentence, m.index, m.end - m.index);
+    let value: boolean | null = direct === "buyer" ? null : direct;
+    if (value === null && direct !== "buyer" && prev?.value != null && LIST_GAP.test(sentence.slice(prev.end, m.index))) value = prev.value;
+    prev = { end: m.end, value };
+    if (value === null || seen.has(m.feature)) continue;
+    seen.add(m.feature); // one claim per feature per sentence
+    claims.push({ factKey: `features.${m.feature}`, value: String(value), at: m.index });
   }
   return claims;
 }
 
 const PRICE = /\$\s?(\d{1,4}(?:\.\d{1,2})?)(\s*(?:-|–|to|and)\s*\$?\s?\d+)?/g;
-const PRICE_LEAD = /\b(?:start(?:s|ing)?|from|begin(?:s|ning)?|priced|pricing|plans?|costs?|pay|runs?)\b/i;
-const PRICE_UNIT = /^\s*(?:\/|per|a|each)\s*(?:vehicle|truck|unit|asset|month|mo)\b|^\s*(?:per|a|each)\s+\w+\s+(?:per|a|each)?\s*(?:month|vehicle)/i;
+const PRICE_LEAD = /\b(?:start(?:s|ing)?|from|begin(?:s|ning)?|priced|pricing|price|plans?|costs?|charges?|pay|runs?|is|are|at|for|only|just)\b/i;
+const PRICE_UNIT =
+  /^\s*(?:\/|per|a|each)\s*(?:vehicle|truck|unit|asset|month|mo)\b|^\s*(?:per|a|each)\s+\w+\s+(?:per|a|each)?\s*(?:month|vehicle)|^\s*(?:monthly|a month|per month|\/mo)\b/i;
 const APPROX = /\b(?:about|around|roughly|approximately|approx\.?|~|nearly|close to)\s*$/i;
 
 export function extractPriceClaims(sentence: string): RawClaim[] {

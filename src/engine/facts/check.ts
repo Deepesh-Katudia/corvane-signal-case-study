@@ -24,6 +24,8 @@ export function hqConsistent(claimed: string, actual: string): boolean {
   return placeParts(claimed).every((part) => truth.includes(part) || part.split(/\s+/).every((w) => truthWords.has(STATES[w] ?? w)));
 }
 
+const MARKET_WIDE = /\b(?:most|many|some|typical(?:ly)?|usually|on average|average|providers|vendors|tools|options|competitors|the market|the industry)\b/i;
+
 const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 interface Judgement {
@@ -93,6 +95,8 @@ export function checkFacts(responseId: string, units: AttributedUnit[], facts: R
     for (const claim of extractAllClaims(unit.text)) {
       const entity = entityAt(unit, unit.start + claim.at);
       if (!entity || entity.startsWith("excluded:") || !facts[entity]) continue;
+      // "Most providers charge $40..." after a company is a market statement, not a claim about that company.
+      if (claim.factKey === "starting_price_usd" && unit.spans.length === 0 && MARKET_WIDE.test(unit.text)) continue;
       const { verdict, expected } = judgeClaim(claim, facts[entity]);
       const claimText = cleanClaimText(unit.text);
       const key = `${entity}|${claim.factKey}|${claim.value}|${claimText}`;

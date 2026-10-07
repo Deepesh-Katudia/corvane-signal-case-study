@@ -5,7 +5,11 @@ import type { Tone } from "../types";
  * which beats criticism. Built from the brief's definitions and a full read of the six-week data pack.
  */
 export const NOT_RECOMMENDED: RegExp[] = [
-  /\bavoid\b/,
+  // "avoid" only as advice ("Avoid X if...", "I'd avoid it"), not "helps avoid outages"
+  /^\s*avoid\b/,
+  /\b(?:i'?d|i would|we'?d|you should|should|better to|recommend you) avoid\b/,
+  /\bbest avoided\b/,
+  /\b(?:don'?t|do not|never|wouldn'?t)\s+(?:go with|pick|choose|use|buy|consider|bother with)\b/,
   /\bsteer clear\b/,
   /\bwouldn'?t (?:choose|recommend|pick|use|go with|buy)\b/,
   /\b(?:would|will|do|does) not (?:choose|recommend|pick|buy|use)\b/,
@@ -45,6 +49,8 @@ export const RECOMMENDED: RegExp[] = [
   /\bhighly recommend/,
   /^\s*(?:choose|pick|go with|try)\b/,
   /\bis (?:the )?better\b|\bbetter (?:choice|option|fit|pick)\b/,
+  /\bis (?:the )?best\b/,
+  /\b(?:great|excellent|ideal|perfect) (?:choice|option|fit|pick)\b/,
 ];
 
 export const NEGATIVE: RegExp[] = [
@@ -68,14 +74,25 @@ export const NEGATIVE: RegExp[] = [
   /\bhidden fees\b/,
   /\bsteep learning curve\b/,
   /\bnot (?:great|good|ideal|impressive)\b/,
+  /\bweak\b/,
+  /\blacking\b/,
+  /\boutdated\b/,
+  /\bpricey\b/,
 ];
 
 /** Words that hand the final say to whatever follows them ("X is good, but ..."). */
 export const CONTRAST = /(?:,|;|\s)\s*(?:but|though|although|however|yet)\b|^\s*(?:even so|that said|still)\b/gi;
 
+/** A recommendation phrase that is negated ("not the best option") is criticism, not a recommendation. */
+export const NEGATED_RECOMMENDATION: RegExp[] = [
+  /\b(?:not|isn'?t|aren'?t|never) (?:the |a |an )?(?:best|top|safest|strongest|ideal|great|strong|reliable)\b/,
+  /\bnot (?:really |exactly )?(?:recommended|worth shortlisting|hard to beat)\b/,
+];
+
 export function baseTone(text: string): Tone | null {
   const t = text.toLowerCase().replace(/[’‘]/g, "'");
   if (NOT_RECOMMENDED.some((r) => r.test(t))) return "not_recommended";
+  if (NEGATED_RECOMMENDATION.some((r) => r.test(t))) return "negative";
   if (RECOMMENDED.some((r) => r.test(t))) return "recommended";
   if (NEGATIVE.some((r) => r.test(t))) return "negative";
   return null;

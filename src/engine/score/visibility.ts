@@ -28,7 +28,7 @@ export function buildCells(responses: AnalyzedResponse[], prompts: Prompt[], bra
   const priority = new Map(prompts.map((p) => [p.id, p.priority]));
   const cells = new Map<string, Cell>();
   for (const r of responses) {
-    if (!r.ok) continue;
+    if (!r.ok || r.week <= 0) continue;
     const id = `${r.week}|${r.promptId}|${r.engine}`;
     const cell =
       cells.get(id) ??

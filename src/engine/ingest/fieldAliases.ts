@@ -29,15 +29,13 @@ export function canonicalizeKeys(raw: Record<string, unknown>): {
   fields: Partial<Record<CanonicalField, unknown>>;
   unknownKeys: string[];
 } {
+  // For each field, the earliest alias in FIELD_ALIASES wins ("response_id" beats a generic "id").
+  const bySquashed = new Map(Object.keys(raw).map((k) => [squash(k), k]));
   const fields: Partial<Record<CanonicalField, unknown>> = {};
-  const unknownKeys: string[] = [];
-  for (const [key, value] of Object.entries(raw)) {
-    const canonical = LOOKUP.get(squash(key));
-    if (!canonical) {
-      unknownKeys.push(key);
-      continue;
-    }
-    if (!(canonical in fields)) fields[canonical] = value;
+  for (const [field, names] of Object.entries(FIELD_ALIASES) as Array<[CanonicalField, readonly string[]]>) {
+    const key = names.map((n) => bySquashed.get(squash(n))).find((k) => k !== undefined);
+    if (key !== undefined) fields[field] = raw[key];
   }
+  const unknownKeys = Object.keys(raw).filter((k) => !LOOKUP.has(squash(k)));
   return { fields, unknownKeys };
 }

@@ -7,15 +7,15 @@ export interface RawRecord {
   line: number;
 }
 
+const WRAPPED = /^\{\s*"(?:responses|data|results|items|answers)"\s*:\s*\[/;
+
 function fromJsonDocument(trimmed: string, sourceFile: string): RawRecord[] | null {
   try {
     const parsed = JSON.parse(trimmed) as unknown;
     const container = parsed as Record<string, unknown>;
     const list = Array.isArray(parsed)
       ? parsed
-      : Array.isArray(container.responses)
-        ? (container.responses as unknown[])
-        : [parsed];
+      : (["responses", "data", "results", "items", "answers"].map((k) => container[k]).find(Array.isArray) as unknown[] | undefined) ?? [parsed];
     return list
       .filter((r): r is Record<string, unknown> => !!r && typeof r === "object" && !Array.isArray(r))
       .map((raw, i) => ({ raw, sourceFile, line: i + 1 }));
@@ -39,6 +39,12 @@ export function parseResponsesFile(content: string, sourceFile: string): { recor
   if (trimmed.startsWith("[")) {
     const records = fromJsonDocument(trimmed, sourceFile);
     if (records) return { records, issues };
+  }
+
+  // A single JSON object wrapping the answers: {"data": [...]}, {"results": [...]}, ...
+  if (trimmed.startsWith("{") && WRAPPED.test(trimmed)) {
+    const records = fromJsonDocument(trimmed, sourceFile);
+    if (records && records.length > 1) return { records, issues };
   }
 
   const records: RawRecord[] = [];

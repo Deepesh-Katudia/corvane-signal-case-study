@@ -4,6 +4,20 @@ export function isNullish(v: unknown): boolean {
   return v === null || v === undefined || (typeof v === "string" && NULLISH_STRINGS.has(v.trim().toLowerCase()));
 }
 
+/** An error field of false / 0 / "false" / "none" means "no error". */
+export function isNoError(v: unknown): boolean {
+  return isNullish(v) || v === false || v === 0 || (typeof v === "string" && ["false", "0", "ok", "no"].includes(v.trim().toLowerCase()));
+}
+
+/** Week numbers arrive as 3, "3", "W3", "week 3" or "2026-W03". */
+export function toWeek(v: unknown): number | null {
+  if (typeof v === "string") {
+    const m = v.match(/w(?:eek)?\s*-?\s*(\d{1,2})\b/i);
+    if (m) return parseInt(m[1], 10);
+  }
+  return toInt(v);
+}
+
 export function toInt(v: unknown): number | null {
   if (isNullish(v)) return null;
   if (typeof v === "number") return Number.isFinite(v) ? Math.trunc(v) : null;

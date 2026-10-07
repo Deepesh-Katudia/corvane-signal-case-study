@@ -61,7 +61,7 @@ function summarizeWeeks(responses: AnalyzedResponse[], cells: Cell[], prompts: P
   const allEngines = [...new Set(responses.map((r) => r.engine))].sort();
   const promptCount = prompts.length || new Set(responses.map((r) => r.promptId)).size;
   const expected = promptCount * allEngines.length;
-  const weeks = [...new Set(responses.map((r) => r.week))].sort((a, b) => a - b);
+  const weeks = [...new Set(responses.map((r) => r.week))].filter((w) => w > 0).sort((a, b) => a - b);
   return weeks.map((week) => {
     const rs = responses.filter((r) => r.week === week);
     const weekCells = cells.filter((c) => c.week === week);

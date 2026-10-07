@@ -1,6 +1,6 @@
 import type { EngineConfig, IngestIssue, NormalizedResponse } from "../types";
 import { canonicalizeKeys } from "./fieldAliases";
-import { decodeEntities, isNullish, toCitations, toInt, toText } from "./coerce";
+import { decodeEntities, isNoError, toCitations, toInt, toText, toWeek } from "./coerce";
 import { parseDate, resolveAmbiguous, type ParsedDate } from "./dates";
 import { canonicalEngine } from "./engines";
 import type { RawRecord } from "./parseFile";
@@ -47,14 +47,14 @@ function toDraft(rec: RawRecord, engines: EngineConfig[], issues: IngestIssue[])
   return {
     rec,
     responseId,
-    week: toInt(fields.week),
+    week: toWeek(fields.week),
     engine,
     promptId: toText(fields.promptId).trim().toUpperCase(),
     run: toInt(fields.run),
     date: parseDate(fields.collectedAt),
     text: decodeEntities(toText(fields.text)).trim(),
     citations: toCitations(fields.citations),
-    error: isNullish(fields.error) ? null : toText(fields.error),
+    error: isNoError(fields.error) ? null : toText(fields.error),
   };
 }
 
@@ -112,8 +112,9 @@ export function normalizeRecords(records: RawRecord[], engines: EngineConfig[], 
       if (week !== null) issues.push({ kind: "missing_field", detail: `Week missing; inferred week ${week} from collection date`, ...base });
     }
     if (week === null) {
-      issues.push({ kind: "missing_field", detail: "No week and no usable date; skipped", ...base });
-      continue;
+      // Still exported (mentions/wrong facts) but left out of weekly scores.
+      issues.push({ kind: "missing_field", detail: "No week and no usable date; kept as week 0 (exported, not scored)", ...base });
+      week = 0;
     }
     if (knownPromptIds && !knownPromptIds.has(d.promptId)) {
       issues.push({ kind: "unknown_prompt", detail: `Prompt "${d.promptId}" is not in prompts.csv`, ...base });
