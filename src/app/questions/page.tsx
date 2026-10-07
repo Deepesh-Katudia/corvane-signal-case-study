@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getAnalysis, resolvePerspective } from "@/server/analysis";
 import { Filters } from "@/components/Filters";
 import { Empty, Section, ToneChip } from "@/components/ui";
-import { STAGE_LABEL, TONE_VAR, pct, withAs } from "@/lib/format";
+import { STAGE_LABEL, TONE_LABEL, TONE_VAR, pct, withAs } from "@/lib/format";
 import type { AnalyzedResponse } from "@/engine/types";
 
 type SP = Record<string, string | string[] | undefined>;
@@ -80,7 +80,24 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
         ]}
       />
 
-      <Section kicker={week === "all" ? "All weeks" : `Week ${week}`} title="Coverage by question and engine">
+      <Section
+        kicker={week === "all" ? "All weeks" : `Week ${week}`}
+        title="Coverage by question and engine"
+        aside={
+          <ul className="flex flex-wrap gap-3 text-xs text-ink-2" aria-label="Legend">
+            {(["recommended", "neutral", "negative", "not_recommended"] as const).map((t) => (
+              <li key={t} className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full" style={{ background: TONE_VAR[t] }} aria-hidden />
+                {TONE_LABEL[t]}
+              </li>
+            ))}
+            <li className="flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-full border border-ink-3" aria-hidden />
+              Not mentioned
+            </li>
+          </ul>
+        }
+      >
         <div className="overflow-x-auto rounded-lg border border-rule bg-card">
           <table className="w-full min-w-[720px] text-sm">
             <thead>

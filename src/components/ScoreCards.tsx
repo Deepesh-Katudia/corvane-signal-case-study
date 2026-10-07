@@ -14,10 +14,10 @@ function Change({ label, c }: { label: string; c: WeekComparison | null }) {
   }
   const color = c.movement === "real_gain" ? "text-gain" : c.movement === "real_drop" ? "text-drop" : "text-ink-2";
   return (
-    <div className="flex items-center justify-between gap-2 text-xs">
-      <span className="text-ink-2">{label}</span>
-      <span className="flex items-center gap-2">
-        <span className={`num font-medium ${color}`}>{signed(c.delta)}</span>
+    <div className="text-xs">
+      <span className="block text-ink-3">{label}</span>
+      <span className="mt-0.5 flex flex-wrap items-center gap-2">
+        <span className={`num text-sm font-medium ${color}`}>{signed(c.delta)}</span>
         <MovementBadge movement={c.movement} />
       </span>
     </div>
@@ -41,7 +41,7 @@ export function ScoreCards({ cards, trendLabel }: { cards: ScoreCard[]; trendLab
             {c.score?.toFixed(0) ?? "–"}
             <span className="text-base text-ink-3">/100</span>
           </p>
-          <div className="mt-4 space-y-1.5">
+          <div className="mt-4 space-y-2.5">
             <Change label="vs last week" c={c.weekly} />
             <Change label={trendLabel} c={c.trend} />
           </div>
