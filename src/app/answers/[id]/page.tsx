@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAnalysis } from "@/server/analysis";
 import { Card, Section, ToneChip } from "@/components/ui";
-import { STAGE_LABEL, TONE_VAR } from "@/lib/format";
+import { STAGE_LABEL, TONE_VAR, stripMarkdown } from "@/lib/format";
 import { factLabel, truthText } from "@/engine/insights/brief";
 import type { AnalyzedResponse } from "@/engine/types";
 
@@ -15,7 +15,7 @@ function Highlighted({ r }: { r: AnalyzedResponse }) {
   let at = 0;
   spans.forEach((s, i) => {
     if (s.start < at) return;
-    parts.push(r.text.slice(at, s.start));
+    parts.push(stripMarkdown(r.text.slice(at, s.start)));
     const color = s.tone ? TONE_VAR[s.tone] : "var(--ink)";
     parts.push(
       <mark key={i} className="mention" style={{ color, background: `color-mix(in srgb, ${color} 12%, transparent)` }} title={`${s.brand} · ${s.tone}`}>
@@ -24,7 +24,7 @@ function Highlighted({ r }: { r: AnalyzedResponse }) {
     );
     at = s.end;
   });
-  parts.push(r.text.slice(at));
+  parts.push(stripMarkdown(r.text.slice(at)));
   return <div className="whitespace-pre-wrap font-serif text-lg leading-relaxed">{parts}</div>;
 }
 
@@ -81,7 +81,7 @@ export default async function AnswerPage({ params }: { params: Promise<{ id: str
                       </span>
                       <ToneChip tone={m.tone} />
                     </div>
-                    {m.toneEvidence && <p className="mt-1 border-l-2 border-rule pl-2 text-xs text-ink-2">Decided by: “{m.toneEvidence}”</p>}
+                    {m.toneEvidence && <p className="mt-1 border-l-2 border-rule pl-2 text-xs text-ink-2">Decided by: “{stripMarkdown(m.toneEvidence)}”</p>}
                     <p className="mt-1 text-xs text-ink-3">Written as: {[...new Set(m.spans.map((s) => s.text))].join(", ")}</p>
                   </li>
                 ))}

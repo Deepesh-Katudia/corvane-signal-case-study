@@ -11,7 +11,7 @@ export default async function MondayPage() {
   const brief = buildBrief(result, focus);
   const client = result.perspective;
   const trend = result.trend;
-  const trendLabel = trend ? `weeks ${trend.recentWeeks[0]}–${trend.recentWeeks.at(-1)} vs ${trend.earlierWeeks[0]}–${trend.earlierWeeks.at(-1)}` : "trend";
+  const trendLabel = trend ? `last 3 weeks vs the 3 before (weeks ${trend.recentWeeks[0]}–${trend.recentWeeks.at(-1)} vs ${trend.earlierWeeks[0]}–${trend.earlierWeeks.at(-1)})` : "trend";
   const [lead, ...rest] = brief.headline.split(/(?<=\.)\s+/);
   const engineName = (e: string) => result.engines.find((x) => x.canonical === e)?.label ?? e;
   const maxGain = Math.max(...brief.takers.map((t) => t.gained), 1);
@@ -42,7 +42,8 @@ export default async function MondayPage() {
       <ScoreCards cards={brief.cards} trendLabel={trendLabel} />
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <Section kicker={brief.whyMovedWindow ? `Explaining ${brief.whyMovedWindow}` : "Why it moved"} title={`Why ${brief.focusName} moved`}>
+        <Section kicker={brief.whyMovedWindow ? `Comparing ${brief.whyMovedWindow}` : "Why it moved"} title={`Why ${brief.focusName} moved`}>
+          {brief.whyMovedNote && <p className="mb-3 rounded-md bg-noise-soft p-2 text-sm text-ink-2">{brief.whyMovedNote}</p>}
           {brief.whyMoved.length ? (
             <ol className="space-y-3">
               {brief.whyMoved.map((w, i) => (
@@ -60,12 +61,12 @@ export default async function MondayPage() {
               <p className="kicker mb-2">Who took ground where {brief.focusName} lost it</p>
               <ul className="space-y-2">
                 {brief.takers.map((t) => (
-                  <li key={t.brand} className="grid grid-cols-[7rem_1fr_3rem] items-center gap-3 text-sm">
+                  <li key={t.brand} className="grid grid-cols-[7rem_1fr_4.5rem] items-center gap-3 text-sm">
                     <span className="truncate font-medium">{t.name}</span>
                     <span className="h-2 rounded-full bg-paper-2">
                       <span className="block h-2 rounded-full bg-drop/70" style={{ width: `${(t.gained / maxGain) * 100}%` }} />
                     </span>
-                    <span className="num text-right text-ink-2">+{t.gained.toFixed(1)}</span>
+                    <span className="num text-right text-ink-2">+{t.gained.toFixed(1)} pts</span>
                   </li>
                 ))}
               </ul>
@@ -127,7 +128,7 @@ export default async function MondayPage() {
         </ol>
       </Section>
 
-      <Section kicker="Six-week view" title="Visibility score by week">
+      <Section kicker={`${result.weeks.length}-week view`} title="Visibility score by week">
         <TrendChart series={brief.cards.map((c) => ({ brand: c.brand, name: c.name, isFocus: c.isFocus, points: c.series }))} />
       </Section>
     </div>

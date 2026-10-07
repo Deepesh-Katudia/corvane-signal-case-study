@@ -26,7 +26,8 @@ interface HandLabel {
 
 const config = loadConfig();
 const ctx = createContext(config);
-const dataset = await loadDataset("data", config.engines);
+// Always the official data pack, so the seeded sample never changes when new weeks are added.
+const dataset = await loadDataset("data/responses.jsonl", config.engines);
 const answered = dataset.responses.filter((r) => r.ok);
 
 function sample(): AnalyzedResponse[] {

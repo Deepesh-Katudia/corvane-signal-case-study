@@ -12,7 +12,8 @@ import type { AnalyzedResponse, Mention } from "@/engine/types";
 const root = path.join(__dirname, "..");
 const config = loadConfig(path.join(root, "config"));
 const scoring = { ...config.scoring, noiseIterations: 500 };
-const dataset = await loadDataset(path.join(root, "data"), config.engines);
+// The official six-week data pack only, whatever else has been dropped into data/.
+const dataset = await loadDataset(path.join(root, "data", "responses.jsonl"), config.engines);
 
 function cell(week: number, promptId: string, engine: string, runs: Record<string, number[]>, priority = 1): Cell {
   return { key: `${promptId}|${engine}`, week, promptId, engine, priority, runs, responseIds: [] };

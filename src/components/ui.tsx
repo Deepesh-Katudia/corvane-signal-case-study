@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { Tone } from "@/engine/types";
 import type { Movement } from "@/engine/score/compare";
-import { MOVEMENT_LABEL, TONE_LABEL, TONE_VAR } from "@/lib/format";
+import { MOVEMENT_HELP, MOVEMENT_LABEL, TONE_LABEL, TONE_VAR } from "@/lib/format";
 
 export function ToneChip({ tone, compact = false }: { tone: Tone | null; compact?: boolean }) {
   if (!tone) return <span className="text-ink-3 text-xs">not mentioned</span>;
@@ -24,7 +24,11 @@ const MOVEMENT_STYLE: Record<Movement, string> = {
 };
 
 export function MovementBadge({ movement }: { movement: Movement }) {
-  return <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${MOVEMENT_STYLE[movement]}`}>{MOVEMENT_LABEL[movement]}</span>;
+  return (
+    <span title={MOVEMENT_HELP[movement]} className={`cursor-help rounded px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${MOVEMENT_STYLE[movement]}`}>
+      {MOVEMENT_LABEL[movement]}
+    </span>
+  );
 }
 
 export function Section({ kicker, title, children, aside }: { kicker: string; title: string; children: ReactNode; aside?: ReactNode }) {

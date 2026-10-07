@@ -46,6 +46,8 @@ export interface MondayBrief {
   whyMoved: string[];
   /** Which comparison "whyMoved" explains, e.g. "weeks 4-6 vs 1-3". */
   whyMovedWindow: string | null;
+  /** Caveat shown when the change being explained is itself within normal noise. */
+  whyMovedNote: string | null;
   takers: Array<{ brand: string; name: string; gained: number; questions: string[] }>;
   alerts: FactAlert[];
   competitorAlerts: FactAlert[];
@@ -75,16 +77,18 @@ export function truthText(factKey: string, expected: string | null): string {
   return expected;
 }
 
-const THEMES: Array<[string, RegExp]> = [
-  ["slow customer support", /slow customer support|support complaints/i],
-  ["outages and slow fixes", /outages|slow fixes/i],
-  ["slow setup", /setup .*longer/i],
-  ["limited reporting", /reporting is limited/i],
-  ["seen as expensive", /expensive/i],
-  ["contract terms", /contract terms/i],
-  ["billing complaints", /billing complaints/i],
-  ["clunky mobile app", /clunky mobile app/i],
+const THEMES: Array<[string, RegExp, string]> = [
+  ["slow customer support", /slow customer support|support complaints/i, "Publish current support response times and recent customer quotes about support."],
+  ["outages and slow fixes", /outages|slow fixes/i, "Publish an uptime/status page and recent reliability figures."],
+  ["slow setup", /setup .*longer/i, "Publish a typical onboarding timeline (e.g. 'live in N days') with a customer example."],
+  ["limited reporting", /reporting is limited/i, "Show the reporting features on the website with screenshots and a sample report."],
+  ["seen as expensive", /expensive/i, "Make the $29 starting price and what it includes easy to find."],
+  ["contract terms", /contract terms/i, "State contract terms plainly (length, cancellation) on the pricing page."],
+  ["billing complaints", /billing complaints/i, "Explain billing clearly on the pricing page and address recent billing reviews."],
+  ["clunky mobile app", /clunky mobile app/i, "Show recent app updates and app-store ratings for the driver app."],
 ];
+
+export const possessive = (n: string): string => (n.endsWith("s") ? `${n}'` : `${n}'s`);
 
 const fmt = (n: number) => (n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1));
 
@@ -118,9 +122,32 @@ function groupAlerts(claims: FactClaim[], result: AnalysisResult): FactAlert[] {
 
 function movementWords(c: WeekComparison | null): string {
   if (!c || c.delta === null) return "no comparison yet";
-  if (c.movement === "real_gain") return `a real gain of ${fmt(c.delta)}`;
-  if (c.movement === "real_drop") return `a real drop of ${fmt(c.delta)}`;
-  return `${fmt(c.delta)}, within normal week-to-week variation (±${(c.noiseBand ?? 0).toFixed(0)})`;
+  if (c.movement === "real_gain") return `up ${c.delta.toFixed(1)} points, a real rise`;
+  if (c.movement === "real_drop") return `down ${Math.abs(c.delta).toFixed(1)} points, a real fall`;
+  return `${fmt(c.delta)} points, which is within the normal ups and downs of AI answers`;
+}
+
+type Direction = "gaining" | "losing" | "steady";
+
+/** Real movement first from the 3-week trend (steadier), then from last week. */
+function directionOf(card: ScoreCard): Direction {
+  for (const c of [card.trend, card.weekly]) {
+    if (c?.movement === "real_gain") return "gaining";
+    if (c?.movement === "real_drop") return "losing";
+  }
+  return "steady";
+}
+
+/** "Leads / trails" (where you stand) and "gaining / losing / steady" (where you're heading), kept separate. */
+function headlineFor(focusName: string, focusCard: ScoreCard, leader: ScoreCard): string {
+  const leads = leader.brand === focusCard.brand;
+  const dir = directionOf(focusCard);
+  if (leads && dir === "losing") return `${focusName} still leads in AI answers, but is losing ground.`;
+  if (leads && dir === "gaining") return `${focusName} leads in AI answers, and is pulling ahead.`;
+  if (leads) return `${focusName} leads in AI answers, and its position is steady.`;
+  if (dir === "gaining") return `${focusName} trails ${leader.name} in AI answers, but is gaining.`;
+  if (dir === "losing") return `${focusName} is losing ground in AI answers, behind ${leader.name}.`;
+  return `${focusName} trails ${leader.name} in AI answers; no real change recently.`;
 }
 
 export function buildBrief(result: AnalysisResult, focus = result.perspective): MondayBrief {
@@ -144,13 +171,16 @@ export function buildBrief(result: AnalysisResult, focus = result.perspective): 
   const leader = [...cards].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
   const bestTrend = [...cards].filter((c) => c.trend?.movement === "real_gain").sort((a, b) => (b.trend?.delta ?? 0) - (a.trend?.delta ?? 0))[0];
 
-  const winning = focusCard.trend?.movement === "real_gain" || (leader?.brand === focus && focusCard.trend?.movement !== "real_drop");
-  const losing = focusCard.trend?.movement === "real_drop";
+  const runnerUp = [...cards].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).find((c) => c.brand !== focus);
+  const span = (ws: number[]) => (ws.length > 1 ? `weeks ${ws[0]}–${ws[ws.length - 1]}` : `week ${ws[0]}`);
   const headline = [
-    `${name(focus)} ${losing ? "is losing ground" : winning ? "is winning" : "is holding steady"} in AI answers.`,
-    `Score ${focusCard.score?.toFixed(0) ?? "n/a"}/100 in week ${latest}${leader && leader.brand !== focus ? ` (leader: ${leader.name} at ${leader.score?.toFixed(0)})` : " (top of the tracked group)"}.`,
-    result.trend ? `Over weeks ${result.trend.recentWeeks.join("-")} vs ${result.trend.earlierWeeks.join("-")}: ${movementWords(focusCard.trend)}.` : "",
-    bestTrend && bestTrend.brand !== focus ? `${bestTrend.name} is the one gaining (${movementWords(bestTrend.trend)}).` : "",
+    headlineFor(name(focus), focusCard, leader),
+    `Score ${focusCard.score?.toFixed(0) ?? "n/a"}/100 in week ${latest}${
+      leader.brand !== focus ? `, against ${possessive(leader.name)} ${leader.score?.toFixed(0)}` : runnerUp ? `, ahead of ${runnerUp.name} at ${runnerUp.score?.toFixed(0)}` : ""
+    }.`,
+    focusCard.weekly?.delta != null ? `Since last week: ${movementWords(focusCard.weekly)}.` : "",
+    result.trend ? `Over the last 3 weeks (${span(result.trend.recentWeeks)} vs ${span(result.trend.earlierWeeks)}): ${movementWords(focusCard.trend)}.` : "",
+    bestTrend && bestTrend.brand !== focus ? `${bestTrend.name} is the competitor rising fastest.` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -163,12 +193,17 @@ export function buildBrief(result: AnalysisResult, focus = result.perspective): 
     .join(" ") || null;
 
   // Explain the 3-week trend when it is real (a steadier signal); otherwise explain last week's change.
+  const weeklyIsNoise = focusCard.weekly?.movement === "normal_variation";
   const useTrend = !!result.trend && focusCard.trend?.movement !== "normal_variation" && focusCard.trend?.movement !== "no_baseline";
   const drivers = useTrend ? result.trend!.drivers[focus] : result.drivers[focus];
-  const whyMovedWindow = useTrend
+  const whyMovedWindow: string | null = useTrend
     ? `weeks ${result.trend!.recentWeeks.join(", ")} vs ${result.trend!.earlierWeeks.join(", ")}`
     : result.previousWeek !== null
       ? `week ${latest} vs week ${result.previousWeek}`
+      : null;
+  const whyMovedNote =
+    !useTrend && weeklyIsNoise
+      ? "Overall, last week's change is within the normal ups and downs, so treat these as the biggest swings to watch, not confirmed trends."
       : null;
   const whyMoved = drivers
     ? drivers.changes.slice(0, 4).map((c) => {
@@ -192,6 +227,7 @@ export function buildBrief(result: AnalysisResult, focus = result.perspective): 
     cards,
     whyMoved,
     whyMovedWindow,
+    whyMovedNote,
     takers,
     alerts,
     competitorAlerts,
@@ -269,13 +305,13 @@ function buildActions(result: AnalysisResult, focus: string, alerts: FactAlert[]
   }
 
   const evidence = result.responses.flatMap((r) => r.mentions.filter((m) => m.brand === focus && m.tone === "negative" && m.toneEvidence).map((m) => m.toneEvidence!));
-  const themes = THEMES.map(([label, re]) => ({ label, n: evidence.filter((e) => re.test(e)).length })).filter((t) => t.n > 0).sort((a, b) => b.n - a.n);
+  const themes = THEMES.map(([label, re, advice]) => ({ label, advice, n: evidence.filter((e) => re.test(e)).length })).filter((t) => t.n > 0).sort((a, b) => b.n - a.n);
   if (themes[0]) {
     actions.push({
       priority: 3,
       kind: "fix_perception",
       title: `Counter the "${themes[0].label}" story`,
-      detail: `AI answers repeat it ${themes[0].n} times when describing ${name(focus)} negatively. Publish recent evidence (support response times, customer quotes) and push fresh reviews on the sites engines cite.`,
+      detail: `AI answers repeat it ${themes[0].n} times when describing ${name(focus)} negatively. ${themes[0].advice} Then encourage fresh reviews on the sites the engines cite, so the newer picture gets picked up.`,
     });
   }
 
@@ -284,7 +320,7 @@ function buildActions(result: AnalysisResult, focus: string, alerts: FactAlert[]
     actions.push({
       priority: 3,
       kind: "sales_brief",
-      title: `Brief sales: AI gets ${name(comp.brand)}'s ${factLabel(comp.factKey)} wrong`,
+      title: `Brief sales: AI gets ${possessive(name(comp.brand))} ${factLabel(comp.factKey)} wrong`,
       detail: `${comp.count} answers say "${comp.example}" (in fact ${truthText(comp.factKey, comp.expectedValue)}). Useful when prospects compare you.`,
     });
   }

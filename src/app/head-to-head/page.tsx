@@ -74,7 +74,7 @@ export default async function HeadToHeadPage({ searchParams }: { searchParams: P
                         <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${isFocus ? "bg-focus text-paper" : "bg-paper-2"}`}>
                           {w.winners.map(name).join(" = ")}
                         </span>
-                        <span className="num ml-1 text-[11px] text-ink-3">{w.points[w.winners[0]].toFixed(0)}</span>
+                        <span className="num ml-1 text-[11px] text-ink-3">{w.points[w.winners[0]].toFixed(0)} pts</span>
                       </td>
                     );
                   })}

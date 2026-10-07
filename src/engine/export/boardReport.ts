@@ -44,7 +44,7 @@ export function buildBoardReport(result: AnalysisResult, perspective = result.pe
         b.name,
         one(bw?.score),
         one(cmp?.delta),
-        cmp ? { real_gain: "Real gain", real_drop: "Real drop", normal_variation: "Within normal variation", no_baseline: "No baseline" }[cmp.movement] : "",
+        cmp ? { real_gain: "Yes: a real rise", real_drop: "Yes: a real fall", normal_variation: "No: within normal ups and downs", no_baseline: "No earlier week to compare" }[cmp.movement] : "",
         pct(bw?.mentionRate ?? 0),
         pct(bw?.recommendRate ?? 0),
         one(bw?.avgPosition),

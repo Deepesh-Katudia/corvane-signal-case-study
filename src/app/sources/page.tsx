@@ -1,7 +1,7 @@
 import { getAnalysis } from "@/server/analysis";
 import { competitorOnlySources, underIndexedSources } from "@/engine/score/sources";
 import { Section } from "@/components/ui";
-import { pct } from "@/lib/format";
+import { pct, possessive } from "@/lib/format";
 
 export default async function SourcesPage() {
   const { result } = await getAnalysis();
@@ -64,7 +64,7 @@ export default async function SourcesPage() {
                 return (
                   <tr key={s.domain} className={`border-b border-rule/60 last:border-0 ${flagged ? "bg-warn-soft/50" : ""}`}>
                     <td className="p-3 font-medium">{s.domain}</td>
-                    <td className="p-3 text-ink-2">{s.ownedBy ? `${name(s.ownedBy)}'s site` : s.kind.replace(/_/g, " ")}</td>
+                    <td className="p-3 text-ink-2">{s.ownedBy ? `${possessive(name(s.ownedBy))} own site` : s.kind.replace(/_/g, " ")}</td>
                     <td className="num p-3 text-right">{s.answers}</td>
                     {tracked.map((b) => (
                       <td key={b.key} className={`num p-3 text-right ${b.key === focus ? "font-semibold text-focus" : "text-ink-2"}`}>
