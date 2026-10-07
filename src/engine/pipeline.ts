@@ -45,7 +45,7 @@ export interface AnalysisResult {
   brandWeeks: BrandWeek[];
   comparisons: WeekComparison[];
   /** Longer view: the latest weeks pooled against the same number of weeks before them. */
-  trend: { recentWeeks: number[]; earlierWeeks: number[]; comparisons: WeekComparison[] } | null;
+  trend: { recentWeeks: number[]; earlierWeeks: number[]; comparisons: WeekComparison[]; drivers: Record<string, Drivers> } | null;
   /** Why each brand moved between the previous and latest week. */
   drivers: Record<string, Drivers>;
   winners: CellWinner[];
@@ -111,7 +111,12 @@ function trendComparisons(cells: Cell[], weekNums: number[], brands: string[], c
   const earlierEnd = earlierWeeks[earlierWeeks.length - 1];
   const recent = poolCells(cells, recentWeeks, latest);
   const earlier = poolCells(cells, earlierWeeks, earlierEnd);
-  return { recentWeeks, earlierWeeks, comparisons: brands.map((b) => compareWeeks(b, latest, recent, earlierEnd, earlier, config.scoring)) };
+  return {
+    recentWeeks,
+    earlierWeeks,
+    comparisons: brands.map((b) => compareWeeks(b, latest, recent, earlierEnd, earlier, config.scoring)),
+    drivers: Object.fromEntries(brands.map((b) => [b, explainChange(b, recent, earlier, brands)])),
+  };
 }
 
 export function runAnalysis(dataset: Dataset, config: AppConfig): AnalysisResult {

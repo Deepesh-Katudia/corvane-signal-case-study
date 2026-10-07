@@ -9,6 +9,8 @@ export interface CellChange {
   after: number;
   /** This pair's share of the overall score change, in score points. */
   contribution: number;
+  /** Other brands whose points rose on this pair, biggest gain first. */
+  gainers: string[];
 }
 
 export interface Taker {
@@ -40,7 +42,13 @@ export function explainChange(brand: string, current: Cell[], previous: Cell[], 
     .map(([c, p]) => {
       const before = cellValue(p, brand);
       const after = cellValue(c, brand);
-      return { promptId: c.promptId, engine: c.engine, priority: c.priority, before, after, contribution: (c.priority * (after - before)) / total };
+      const gainers = allBrands
+        .filter((b) => b !== brand)
+        .map((b) => ({ b, gain: cellValue(c, b) - cellValue(p, b) }))
+        .filter((g) => g.gain > 0)
+        .sort((x, y) => y.gain - x.gain)
+        .map((g) => g.b);
+      return { promptId: c.promptId, engine: c.engine, priority: c.priority, before, after, contribution: (c.priority * (after - before)) / total, gainers };
     })
     .filter((x) => Math.abs(x.contribution) > 1e-9)
     .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));

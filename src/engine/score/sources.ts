@@ -60,3 +60,30 @@ export function sourceStats(responses: AnalyzedResponse[], brands: BrandConfig[]
 export function competitorOnlySources(stats: SourceStat[], focus: string, competitors: string[]): SourceStat[] {
   return stats.filter((s) => s.ownedBy === null && (s.brandAnswers[focus] ?? 0) === 0 && competitors.some((c) => (s.brandAnswers[c] ?? 0) > 0));
 }
+
+export interface SourceGap {
+  domain: string;
+  kind: SourceStat["kind"];
+  answers: number;
+  focusRate: number;
+  leader: string;
+  leaderRate: number;
+  gap: number;
+}
+
+/**
+ * Third-party sources where a competitor is named noticeably more often than the focus brand:
+ * the softer, more useful version of "cites competitors but never us" when no source ignores us outright.
+ */
+export function underIndexedSources(stats: SourceStat[], focus: string, competitors: string[], minAnswers = 10): SourceGap[] {
+  return stats
+    .filter((s) => s.ownedBy === null && s.answers >= minAnswers)
+    .map((s) => {
+      const leader = [...competitors].sort((a, b) => (s.brandAnswers[b] ?? 0) - (s.brandAnswers[a] ?? 0))[0];
+      const focusRate = (s.brandAnswers[focus] ?? 0) / s.answers;
+      const leaderRate = (s.brandAnswers[leader] ?? 0) / s.answers;
+      return { domain: s.domain, kind: s.kind, answers: s.answers, focusRate, leader, leaderRate, gap: leaderRate - focusRate };
+    })
+    .filter((g) => g.gap > 0)
+    .sort((a, b) => b.gap - a.gap);
+}
