@@ -2,7 +2,7 @@
   "_note": "Visibility Score weights. See README 'How the score works'.",
   "tonePoints": { "recommended": 100, "neutral": 50, "negative": 25, "not_recommended": 0 },
   "positionFactors": [1.0, 0.85, 0.7],
-  "bootstrapIterations": 2000,
+  "noiseIterations": 2000,
   "confidence": 0.95,
   "partialWeekCoverage": 0.9
 }

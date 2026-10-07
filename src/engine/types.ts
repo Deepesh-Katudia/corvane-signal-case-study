@@ -56,7 +56,7 @@ export interface EngineConfig {
 export interface ScoringConfig {
   tonePoints: Record<Tone, number>;
   positionFactors: number[]; // index 0 = position 1; last value applies to all later positions
-  bootstrapIterations: number;
+  noiseIterations: number;
   confidence: number;
   partialWeekCoverage: number; // share of expected cells below which a week is "partial"
 }
