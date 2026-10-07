@@ -65,7 +65,7 @@ export default async function DataPage() {
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-rule text-left">
-                {["Week", "Answers", "Failed", "Engines", "Coverage", "Status"].map((h) => (
+                {["Week", "Usable answers", "Engines", "Questions × engines collected", "Status"].map((h) => (
                   <th key={h} className="p-3 font-medium">
                     {h}
                   </th>
@@ -76,15 +76,23 @@ export default async function DataPage() {
               {result.weeks.map((w) => (
                 <tr key={w.week} className="border-b border-rule/60 last:border-0">
                   <td className="num p-3">{w.week}</td>
-                  <td className="num p-3">{w.answers}</td>
-                  <td className="num p-3">{w.failed}</td>
+                  <td className="num p-3">
+                    {w.answers - w.failed} of {w.answers}
+                    {w.failed > 0 && <span className="ml-1 text-xs text-ink-3">({w.failed} failed to collect)</span>}
+                  </td>
                   <td className="p-3">{w.engines.map(engineName).join(", ")}</td>
-                  <td className="num p-3">{pct(w.coverage)}</td>
+                  <td className="num p-3">
+                    {w.cells} of {w.expectedCells} ({pct(w.coverage)})
+                  </td>
                   <td className="p-3">
                     {w.partial ? (
                       <span className="rounded bg-warn-soft px-1.5 py-0.5 text-xs font-semibold text-warn">Incomplete: no {w.missingEngines.map(engineName).join(", ") || "full question set"}</span>
                     ) : (
+                      w.failed > 0 ? (
+                      <span className="text-xs text-ink-2">Complete, {w.failed} answer{w.failed === 1 ? "" : "s"} unusable</span>
+                    ) : (
                       <span className="text-xs text-gain">Complete</span>
+                    )
                     )}
                   </td>
                 </tr>

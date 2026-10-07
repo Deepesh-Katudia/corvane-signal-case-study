@@ -34,7 +34,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <span className="kicker hidden sm:inline">AI visibility · {client.name}</span>
               </div>
               <span className="kicker num">
-                Week {result.latestWeek} · {fmtDate(latest?.firstCollected ?? null)}–{fmtDate(latest?.lastCollected ?? null)} · {result.responses.length} answers
+                Week {result.latestWeek} · {fmtDate(latest?.firstCollected ?? null)}–{fmtDate(latest?.lastCollected ?? null)} · {latest?.answers ?? 0} answers this week · {result.responses.length} across {result.weeks.length} weeks
               </span>
             </div>
             <div className="double-rule mt-3 flex flex-wrap items-center justify-between gap-3 pt-3">

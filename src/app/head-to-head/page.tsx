@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getAnalysis } from "@/server/analysis";
 import { Filters } from "@/components/Filters";
 import { Empty, Section } from "@/components/ui";
@@ -71,10 +72,12 @@ export default async function HeadToHeadPage({ searchParams }: { searchParams: P
                     const isFocus = w.winners.includes(focus);
                     return (
                       <td key={e} className="p-3">
-                        <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${isFocus ? "bg-focus text-paper" : "bg-paper-2"}`}>
-                          {w.winners.map(name).join(" = ")}
-                        </span>
-                        <span className="num ml-1 text-[11px] text-ink-3">{w.points[w.winners[0]].toFixed(0)} pts</span>
+                        <Link href={`/questions?week=${week}&prompt=${p.id}&engine=${e}`} className="group" title="See the answers behind this result">
+                          <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium group-hover:underline ${isFocus ? "bg-focus text-paper" : "bg-paper-2"}`}>
+                            {w.winners.map(name).join(" = ")}
+                          </span>
+                          <span className="num ml-1 text-[11px] text-ink-3">{w.points[w.winners[0]].toFixed(0)} pts</span>
+                        </Link>
                       </td>
                     );
                   })}

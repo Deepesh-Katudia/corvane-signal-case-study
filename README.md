@@ -20,7 +20,7 @@ npm run dev          # analyses data/ and opens the app at http://localhost:3000
 |---|---|
 | `npm run analyze` | Writes `out/mentions.csv`, `out/wrong_facts.csv`, `out/board_report.xlsx` and `out/analysis.json` from everything in `data/` |
 | `npm run analyze -- --data path/to/new_week.jsonl --out results/` | Runs on any file or folder, e.g. unseen data |
-| `npm test` | 127 tests (detection, tone, facts, scoring, formats, Excel weeks) |
+| `npm test` | 137 tests (detection, tone, facts, scoring, formats, Excel weeks, brief wording) |
 | `npm run accuracy` | Re-runs the 15-answer hand check (`-- --sample` prints the sample) |
 | `npm run sample-week` | Regenerates `samples/week7_answers.xlsx`, a fictional next week for trying out "add a week" |
 
@@ -32,7 +32,7 @@ npm run dev          # analyses data/ and opens the app at http://localhost:3000
 
 | Page | For | Shows |
 |---|---|---|
-| **Monday brief** | Marcus | One-line verdict, scores for Corvane + 3 competitors with *real vs noise* labels, why the score moved (by question and engine), who took ground, wrong-fact alerts, up to 5 suggested actions, 6-week chart |
+| **Monday brief** | Marcus | A four-line opening (where Corvane stands and whether the change is confirmed; Visibility; Watch; This week), a data-confidence line, the top 3 actions with priority, owner and evidence link, scores for Corvane + 3 competitors marked *confirmed* or *not confirmed*, why the score moved (each line opens the answers behind it), who took ground, wrong-fact alerts split into this week vs earlier weeks, the weekly chart, and a "How scoring works" panel |
 | **Questions & answers** | Priya | Question × engine grid (each dot is one answer, coloured by tone), filters for week, engine, buying stage, question and company, drill-down to the original answer with every mention highlighted and the sentence that decided its tone |
 | **Head-to-head** | both | Winner of each question on each engine; who replaced a company that dropped out |
 | **Wrong facts** | sales | False claims about Corvane, plus a battlecard of false claims about Trakvia, Routelyne and Gridwell |
@@ -47,11 +47,11 @@ Every answer gives each company points: **100** if it recommends it, **50** if i
 
 **Honest change.**
 1. **Like-for-like.** A week is compared with the previous one only on question/engine pairs collected in both. Week 5 has no Perplexity answers, so it can't produce a false drop.
-2. **Real or noise.** To decide, the two weeks' runs are shuffled within each pair 2,000 times (seeded, so results are reproducible). A change is **real** only if it's bigger than 95% of the shuffled changes. Week to week, that noise is about ±10 points. So the brief also compares the latest 3 weeks with the 3 before them, which is where the real signal shows up.
+2. **Confirmed or not.** The two weeks' runs are shuffled within each pair 2,000 times (seeded, so results are reproducible). A change is **confirmed** only if it's bigger than 95% of the shuffled changes. Otherwise it is labelled **not yet confirmed**: the score did move, but there is no clear evidence it is more than normal variation (week to week, that variation is about ±10 points). The brief also compares the latest 3 weeks with the 3 before them, which is where confirmed movement usually shows up.
 
 What the data says today:
-- **Corvane:** −6.9 over weeks 4–6 vs 1–3, a real drop.
-- **Routelyne:** +11.7, a real gain.
+- **Corvane:** −6.9 over weeks 4–6 vs 1–3, a confirmed fall.
+- **Routelyne:** +11.7, a confirmed rise.
 - **Trakvia:** now leads on score.
 - **Wrong facts:** 95 false claims (47 about Corvane).
 
@@ -142,6 +142,11 @@ I also reviewed the output against the data. Separate code-review and security-r
 - **Changes are detected, not assumed.** Every run produces a data-quality report: unknown fields, coverage below 90%, an engine's mention rate collapsing, or a sudden drop in matched sentences. Each of these raises an alert instead of quietly changing scores.
 - **Incomplete weeks never become false drops**, because comparisons are like-for-like.
 - **Regression tests catch drift.** A small "golden set" of hand-labelled answers per engine is re-run in CI, so a parser or lexicon change that alters labels is caught before release. New phrasings found in alerts are added to the lexicon with a test.
+
+**Actions follow the strength of the evidence.**
+- A drop that is not confirmed becomes "Watch …", not "Win back …".
+- Wrong facts are ranked by business impact: price and missing features first, headquarters and founding year last.
+- The tool never assumes a cited website holds the error. It suggests checking the cited page and requesting a correction only if that page is wrong.
 
 ## Safety
 

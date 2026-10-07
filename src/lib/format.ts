@@ -16,9 +16,9 @@ export const TONE_VAR: Record<Tone, string> = {
 };
 
 export const MOVEMENT_LABEL: Record<Movement, string> = {
-  real_gain: "Real rise",
-  real_drop: "Real fall",
-  normal_variation: "No real change",
+  real_gain: "Confirmed rise",
+  real_drop: "Confirmed fall",
+  normal_variation: "Not confirmed",
   no_baseline: "No comparison yet",
 };
 
@@ -33,9 +33,9 @@ export const signed = (n: number | null | undefined, digits = 1): string =>
 
 /** Hover text explaining each movement label in plain English. */
 export const MOVEMENT_HELP: Record<Movement, string> = {
-  real_gain: "Bigger than the normal ups and downs of AI answers: this rise is real.",
-  real_drop: "Bigger than the normal ups and downs of AI answers: this fall is real.",
-  normal_variation: "AI answers change every time you ask. This change is within those normal ups and downs, so don't read much into it.",
+  real_gain: "Confirmed: bigger than the normal variation between repeated AI answers.",
+  real_drop: "Confirmed: bigger than the normal variation between repeated AI answers.",
+  normal_variation: "No clear evidence of change: AI answers vary every time you ask, and this change is within that normal variation. The score did move, but it may not last.",
   no_baseline: "There is no earlier period to compare with yet.",
 };
 

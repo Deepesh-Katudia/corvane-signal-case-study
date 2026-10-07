@@ -36,7 +36,7 @@ export function buildBoardReport(result: AnalysisResult, perspective = result.pe
   addSheet(
     wb,
     "Summary",
-    ["Company", `Score (week ${latest})`, "Change vs previous week", "Is the change real?", "Mentioned in % of answers", "Recommended in % of answers", "Average position", "Wrong facts (all weeks)"],
+    ["Company", `Score (week ${latest})`, "Change vs previous week", "Is the change confirmed?", "Mentioned in % of answers", "Recommended in % of answers", "Average position", "Wrong facts (all weeks)"],
     tracked.map((b) => {
       const bw = result.brandWeeks.find((x) => x.brand === b.key && x.week === latest);
       const cmp = result.comparisons.find((c) => c.brand === b.key && c.week === latest);
@@ -44,7 +44,7 @@ export function buildBoardReport(result: AnalysisResult, perspective = result.pe
         b.name,
         one(bw?.score),
         one(cmp?.delta),
-        cmp ? { real_gain: "Yes: a real rise", real_drop: "Yes: a real fall", normal_variation: "No: within normal ups and downs", no_baseline: "No earlier week to compare" }[cmp.movement] : "",
+        cmp ? { real_gain: "Yes: confirmed rise", real_drop: "Yes: confirmed fall", normal_variation: "No clear evidence (within normal variation)", no_baseline: "No earlier week to compare" }[cmp.movement] : "",
         pct(bw?.mentionRate ?? 0),
         pct(bw?.recommendRate ?? 0),
         one(bw?.avgPosition),

@@ -1,8 +1,12 @@
 import type { AnalysisResult } from "../pipeline";
-import type { FactClaim } from "../types";
 import type { WeekComparison } from "../score/compare";
-import type { Drivers } from "../score/drivers";
-import { competitorOnlySources, domainOf, underIndexedSources } from "../score/sources";
+import { groupAlerts, type FactAlert } from "./alerts";
+import { buildActions, type Action } from "./actions";
+import { factTopic, listJoin, possessive, questionHref } from "./labels";
+
+export { factLabel, truthText, possessive } from "./labels";
+export type { FactAlert } from "./alerts";
+export type { Action } from "./actions";
 
 export interface ScoreCard {
   brand: string;
@@ -14,25 +18,16 @@ export interface ScoreCard {
   series: Array<{ week: number; score: number; partial: boolean }>;
 }
 
-export interface FactAlert {
-  brand: string;
-  factKey: string;
-  claimedValue: string;
-  expectedValue: string | null;
-  example: string;
-  count: number;
-  engines: string[];
-  weeks: number[];
-  newThisWeek: boolean;
-  responseIds: string[];
-  sources: string[];
+export interface Movement {
+  direction: "up" | "down";
+  text: string;
+  href: string;
 }
 
-export interface Action {
-  priority: 1 | 2 | 3;
-  title: string;
-  detail: string;
-  kind: "fix_fact" | "win_question" | "get_listed" | "fix_perception" | "sales_brief";
+export interface ExecLine {
+  label: "Visibility" | "Watch" | "This week";
+  text: string;
+  href?: string;
 }
 
 export interface MondayBrief {
@@ -40,11 +35,16 @@ export interface MondayBrief {
   focusName: string;
   latestWeek: number | null;
   previousWeek: number | null;
-  headline: string;
+  /** One sentence: where we stand, and whether the latest change is confirmed. */
+  status: string;
+  /** Visibility / Watch / This week. */
+  execLines: ExecLine[];
+  /** "Latest data: Sep 28–30 · 89 usable answers out of 90 · 3 engines · from week7_answers.xlsx" */
+  dataLine: string;
   partialNote: string | null;
   cards: ScoreCard[];
-  whyMoved: string[];
-  /** Which comparison "whyMoved" explains, e.g. "weeks 4-6 vs 1-3". */
+  whyMoved: Movement[];
+  /** Which comparison "whyMoved" explains, e.g. "week 7 vs week 6". */
   whyMovedWindow: string | null;
   /** Caveat shown when the change being explained is itself within normal noise. */
   whyMovedNote: string | null;
@@ -54,100 +54,67 @@ export interface MondayBrief {
   actions: Action[];
 }
 
-const FACT_LABELS: Record<string, string> = {
-  starting_price_usd: "starting price",
-  hq: "headquarters",
-  founded: "founding year",
-  integrations: "integrations",
-  "features.eld_compliance": "ELD compliance",
-  "features.dashcams": "dashcams",
-  "features.gps_tracking": "GPS tracking",
-  "features.fuel_card_integration": "fuel card integration",
-  "features.maintenance_alerts": "maintenance alerts",
-  "features.driver_app": "driver app",
-  "features.payroll": "payroll",
-};
-export const factLabel = (k: string): string => FACT_LABELS[k] ?? k.replace(/^features\./, "").replace(/_/g, " ");
+const isReal = (c: WeekComparison | null | undefined): boolean => c?.movement === "real_gain" || c?.movement === "real_drop";
 
-/** "false" for a feature reads as "it does not offer ELD compliance". */
-export function truthText(factKey: string, expected: string | null): string {
-  if (expected === null) return "not covered by facts.json";
-  if (factKey.startsWith("features.")) return expected === "true" ? `it does offer ${factLabel(factKey)}` : `it does not offer ${factLabel(factKey)}`;
-  if (factKey === "integrations") return `its integrations are ${expected}`;
-  return expected;
+/** "Up 8.9 points since last week, not yet confirmed" — a rise is a rise; the badge says whether it is beyond noise. */
+export function changeText(c: WeekComparison | null, period: string): string {
+  if (!c || c.delta === null) return `no earlier ${period} to compare`;
+  const size = Math.abs(c.delta).toFixed(1);
+  const dir = c.delta > 0.05 ? `up ${size} points` : c.delta < -0.05 ? `down ${size} points` : "unchanged";
+  if (c.movement === "real_gain" || c.movement === "real_drop") return `${dir} ${period}, a confirmed change`;
+  return `${dir} ${period}, within normal variation (not yet confirmed)`;
 }
 
-const THEMES: Array<[string, RegExp, string]> = [
-  ["slow customer support", /slow customer support|support complaints/i, "Publish current support response times and recent customer quotes about support."],
-  ["outages and slow fixes", /outages|slow fixes/i, "Publish an uptime/status page and recent reliability figures."],
-  ["slow setup", /setup .*longer/i, "Publish a typical onboarding timeline (e.g. 'live in N days') with a customer example."],
-  ["limited reporting", /reporting is limited/i, "Show the reporting features on the website with screenshots and a sample report."],
-  ["seen as expensive", /expensive/i, "Make the $29 starting price and what it includes easy to find."],
-  ["contract terms", /contract terms/i, "State contract terms plainly (length, cancellation) on the pricing page."],
-  ["billing complaints", /billing complaints/i, "Explain billing clearly on the pricing page and address recent billing reviews."],
-  ["clunky mobile app", /clunky mobile app/i, "Show recent app updates and app-store ratings for the driver app."],
-];
+function statusSentence(focusName: string, focusCard: ScoreCard, leader: ScoreCard): string {
+  const position = leader.brand === focusCard.brand ? `${focusName} leads this week.` : `${focusName} trails ${leader.name} this week.`;
+  const w = focusCard.weekly;
+  if (!w || w.delta === null) return position;
+  if (w.movement === "real_gain") return `${position} The rise since last week is confirmed.`;
+  if (w.movement === "real_drop") return `${position} The fall since last week is confirmed.`;
+  if (w.delta > 0.5) return `${position} Improvement is not yet confirmed.`;
+  if (w.delta < -0.5) return `${position} The dip is not yet confirmed.`;
+  return `${position} No clear change.`;
+}
 
-export const possessive = (n: string): string => (n.endsWith("s") ? `${n}'` : `${n}'s`);
-
-const fmt = (n: number) => (n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1));
-
-function groupAlerts(claims: FactClaim[], result: AnalysisResult): FactAlert[] {
-  const byId = new Map(result.responses.map((r) => [r.responseId, r]));
-  const groups = new Map<string, FactClaim[]>();
-  for (const c of claims) {
-    const k = `${c.brand}|${c.factKey}|${c.claimedValue}`;
-    groups.set(k, [...(groups.get(k) ?? []), c]);
+function watchLine(focusName: string, focusCard: ScoreCard, cards: ScoreCard[]): ExecLine {
+  const t = focusCard.trend;
+  if (t?.movement === "real_drop" && t.delta !== null) return { label: "Watch", text: `${possessive(focusName)} 3-week decline (down ${Math.abs(t.delta).toFixed(1)} points, confirmed).` };
+  const risers = cards
+    .filter((c) => !c.isFocus)
+    .flatMap((c) => [
+      c.trend?.movement === "real_gain" ? { c, delta: c.trend.delta ?? 0, span: "longer-term rise", period: "over 3 weeks" } : null,
+      c.weekly?.movement === "real_gain" ? { c, delta: c.weekly.delta ?? 0, span: "jump this week", period: "since last week" } : null,
+    ])
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => b.delta - a.delta);
+  if (risers[0]) {
+    const r = risers[0];
+    return { label: "Watch", text: `${possessive(r.c.name)} ${r.span} (up ${r.delta.toFixed(1)} points ${r.period}, confirmed).` };
   }
-  return [...groups.values()]
-    .map((cs) => {
-      const rs = cs.map((c) => byId.get(c.responseId)!).filter(Boolean);
-      const weeks = [...new Set(rs.map((r) => r.week))].sort((a, b) => a - b);
-      return {
-        brand: cs[0].brand,
-        factKey: cs[0].factKey,
-        claimedValue: cs[0].claimedValue,
-        expectedValue: cs[0].expectedValue,
-        example: cs[cs.length - 1].claimText,
-        count: cs.length,
-        engines: [...new Set(rs.map((r) => r.engine))],
-        weeks,
-        newThisWeek: weeks.length === 1 && weeks[0] === result.latestWeek,
-        responseIds: cs.map((c) => c.responseId),
-        sources: [...new Set(rs.flatMap((r) => r.citations.map(domainOf).filter((d): d is string => !!d)))],
-      };
-    })
-    .sort((a, b) => Number(b.weeks.includes(result.latestWeek ?? -1)) - Number(a.weeks.includes(result.latestWeek ?? -1)) || b.count - a.count);
+  if (t?.movement === "real_gain" && t.delta !== null) return { label: "Watch", text: `${possessive(focusName)} 3-week rise (up ${t.delta.toFixed(1)} points, confirmed): keep doing what works.` };
+  return { label: "Watch", text: "Nothing beyond normal variation in the last 3 weeks." };
 }
 
-function movementWords(c: WeekComparison | null): string {
-  if (!c || c.delta === null) return "no comparison yet";
-  if (c.movement === "real_gain") return `up ${c.delta.toFixed(1)} points, a real rise`;
-  if (c.movement === "real_drop") return `down ${Math.abs(c.delta).toFixed(1)} points, a real fall`;
-  return `${fmt(c.delta)} points, which is within the normal ups and downs of AI answers`;
-}
-
-type Direction = "gaining" | "losing" | "steady";
-
-/** Real movement first from the 3-week trend (steadier), then from last week. */
-function directionOf(card: ScoreCard): Direction {
-  for (const c of [card.trend, card.weekly]) {
-    if (c?.movement === "real_gain") return "gaining";
-    if (c?.movement === "real_drop") return "losing";
+function thisWeekLine(alerts: FactAlert[], actions: Action[]): ExecLine {
+  const fresh = alerts.filter((a) => a.thisWeek);
+  if (fresh.length) {
+    const topics = [...new Set(fresh.map((a) => factTopic(a.factKey)))].slice(0, 3);
+    return { label: "This week", text: `Investigate incorrect ${listJoin(topics)} claims (${fresh.reduce((s, a) => s + a.thisWeekCount, 0)} answers).`, href: `/facts#${fresh[0].id}` };
   }
-  return "steady";
+  const top = actions[0];
+  return top ? { label: "This week", text: top.title, href: top.evidence.href } : { label: "This week", text: "No new problems found." };
 }
 
-/** "Leads / trails" (where you stand) and "gaining / losing / steady" (where you're heading), kept separate. */
-function headlineFor(focusName: string, focusCard: ScoreCard, leader: ScoreCard): string {
-  const leads = leader.brand === focusCard.brand;
-  const dir = directionOf(focusCard);
-  if (leads && dir === "losing") return `${focusName} still leads in AI answers, but is losing ground.`;
-  if (leads && dir === "gaining") return `${focusName} leads in AI answers, and is pulling ahead.`;
-  if (leads) return `${focusName} leads in AI answers, and its position is steady.`;
-  if (dir === "gaining") return `${focusName} trails ${leader.name} in AI answers, but is gaining.`;
-  if (dir === "losing") return `${focusName} is losing ground in AI answers, behind ${leader.name}.`;
-  return `${focusName} trails ${leader.name} in AI answers; no real change recently.`;
+function dataLine(result: AnalysisResult, engineName: (e: string) => string): string {
+  const w = result.weeks.find((x) => x.week === result.latestWeek);
+  if (!w) return "No data loaded yet.";
+  const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "?");
+  return [
+    `Latest data: ${fmt(w.firstCollected)}–${fmt(w.lastCollected)}`,
+    `${w.answers - w.failed} usable answers out of ${w.answers}`,
+    `${w.engines.length} engine${w.engines.length === 1 ? "" : "s"}${w.missingEngines.length ? ` (missing ${w.missingEngines.map(engineName).join(", ")})` : ""}`,
+    `from ${w.files.join(", ")}`,
+  ].join(" · ");
 }
 
 export function buildBrief(result: AnalysisResult, focus = result.perspective): MondayBrief {
@@ -169,60 +136,57 @@ export function buildBrief(result: AnalysisResult, focus = result.perspective): 
   }));
   const focusCard = cards.find((c) => c.brand === focus)!;
   const leader = [...cards].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
-  const bestTrend = [...cards].filter((c) => c.trend?.movement === "real_gain").sort((a, b) => (b.trend?.delta ?? 0) - (a.trend?.delta ?? 0))[0];
-
-  const runnerUp = [...cards].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).find((c) => c.brand !== focus);
-  const span = (ws: number[]) => (ws.length > 1 ? `weeks ${ws[0]}–${ws[ws.length - 1]}` : `week ${ws[0]}`);
-  const headline = [
-    headlineFor(name(focus), focusCard, leader),
-    `Score ${focusCard.score?.toFixed(0) ?? "n/a"}/100 in week ${latest}${
-      leader.brand !== focus ? `, against ${possessive(leader.name)} ${leader.score?.toFixed(0)}` : runnerUp ? `, ahead of ${runnerUp.name} at ${runnerUp.score?.toFixed(0)}` : ""
-    }.`,
-    focusCard.weekly?.delta != null ? `Since last week: ${movementWords(focusCard.weekly)}.` : "",
-    result.trend ? `Over the last 3 weeks (${span(result.trend.recentWeeks)} vs ${span(result.trend.earlierWeeks)}): ${movementWords(focusCard.trend)}.` : "",
-    bestTrend && bestTrend.brand !== focus ? `${bestTrend.name} is the competitor rising fastest.` : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
 
   const latestSummary = result.weeks.find((w) => w.week === latest);
   const prevSummary = result.weeks.find((w) => w.week === result.previousWeek);
-  const partialNote = [latestSummary, prevSummary]
-    .filter((w) => w?.partial)
-    .map((w) => `Week ${w!.week} is incomplete (no ${w!.missingEngines.map(engineName).join(", ") || "full question set"} answers), so changes are measured only on questions and engines collected in both weeks.`)
-    .join(" ") || null;
+  const partialNote =
+    [latestSummary, prevSummary]
+      .filter((w) => w?.partial)
+      .map((w) => `Week ${w!.week} is incomplete (no ${w!.missingEngines.map(engineName).join(", ") || "full question set"} answers), so changes are measured only on questions and engines collected in both weeks.`)
+      .join(" ") || null;
 
-  // Explain the 3-week trend when it is real (a steadier signal); otherwise explain last week's change.
-  const weeklyIsNoise = focusCard.weekly?.movement === "normal_variation";
-  const useTrend = !!result.trend && focusCard.trend?.movement !== "normal_variation" && focusCard.trend?.movement !== "no_baseline";
+  // Explain the 3-week trend when it is confirmed (a steadier signal); otherwise explain last week's change.
+  const useTrend = !!result.trend && isReal(focusCard.trend);
   const drivers = useTrend ? result.trend!.drivers[focus] : result.drivers[focus];
+  const confirmed = useTrend || isReal(focusCard.weekly);
   const whyMovedWindow: string | null = useTrend
     ? `weeks ${result.trend!.recentWeeks.join(", ")} vs ${result.trend!.earlierWeeks.join(", ")}`
     : result.previousWeek !== null
       ? `week ${latest} vs week ${result.previousWeek}`
       : null;
-  const whyMovedNote =
-    !useTrend && weeklyIsNoise
-      ? "Overall, last week's change is within the normal ups and downs, so treat these as the biggest swings to watch, not confirmed trends."
-      : null;
-  const whyMoved = drivers
-    ? drivers.changes.slice(0, 4).map((c) => {
-        const dir = c.contribution < 0 ? "lost" : "gained";
-        const takers = c.contribution < 0 ? c.gainers : [];
-        return `${dir === "lost" ? "Lost" : "Gained"} ground on "${question(c.promptId)}" in ${engineName(c.engine)} (${c.before.toFixed(0)} → ${c.after.toFixed(0)} points)${takers.length ? `; ${takers.slice(0, 2).map((t) => name(t)).join(" and ")} gained there` : ""}.`;
-      })
-    : [];
+  const whyMovedNote = confirmed
+    ? null
+    : "Overall, last week's change is within normal variation, so these are the biggest swings to watch, not confirmed trends.";
+  const whyMoved: Movement[] = (drivers?.changes ?? []).slice(0, 4).map((c) => {
+    const lost = c.contribution < 0;
+    const gainers = lost ? c.gainers.slice(0, 2).map(name) : [];
+    return {
+      direction: lost ? "down" : "up",
+      text: `${lost ? "Lost" : "Gained"} ground on "${question(c.promptId)}" in ${engineName(c.engine)} (${c.before.toFixed(0)} → ${c.after.toFixed(0)} points)${gainers.length ? `; ${listJoin(gainers)} gained there` : ""}.`,
+      href: questionHref(c.promptId, c.engine),
+    };
+  });
 
   const takers = (drivers?.takers ?? []).slice(0, 3).map((t) => ({ brand: t.brand, name: name(t.brand), gained: t.gained, questions: t.promptIds.map(question) }));
   const alerts = groupAlerts(result.wrongFacts.filter((f) => f.brand === focus), result);
   const competitorAlerts = groupAlerts(result.wrongFacts.filter((f) => f.brand !== focus), result);
+  const actions = buildActions(result, focus, alerts, competitorAlerts, drivers, confirmed);
+
+  const visibility: ExecLine = {
+    label: "Visibility",
+    text: `${focusCard.score?.toFixed(0) ?? "n/a"}/100 · ${changeText(focusCard.weekly, "since last week")}${
+      leader.brand !== focus ? ` · ${leader.name} leads at ${leader.score?.toFixed(0)}` : ""
+    }.`,
+  };
 
   return {
     focus,
     focusName: name(focus),
     latestWeek: latest,
     previousWeek: result.previousWeek,
-    headline,
+    status: statusSentence(name(focus), focusCard, leader),
+    execLines: [visibility, watchLine(name(focus), focusCard, cards), thisWeekLine(alerts, actions)],
+    dataLine: dataLine(result, engineName),
     partialNote,
     cards,
     whyMoved,
@@ -231,98 +195,6 @@ export function buildBrief(result: AnalysisResult, focus = result.perspective): 
     takers,
     alerts,
     competitorAlerts,
-    actions: buildActions(result, focus, alerts, competitorAlerts, drivers),
+    actions,
   };
-}
-
-function buildActions(result: AnalysisResult, focus: string, alerts: FactAlert[], competitorAlerts: FactAlert[], drivers: Drivers | undefined): Action[] {
-  const name = (k: string) => result.brands.find((b) => b.key === k)?.name ?? k;
-  const website = result.brands.find((b) => b.key === focus)?.website ?? "your website";
-  const engineName = (e: string) => result.engines.find((x) => x.canonical === e)?.label ?? e;
-  const actions: Action[] = [];
-
-  for (const a of alerts.slice(0, 2)) {
-    const outreachKinds = new Set(["review_site", "media", "forum"]);
-    const thirdParty = a.sources.filter((d) => outreachKinds.has(result.sources.find((s) => s.domain === d)?.kind ?? "")).slice(0, 2);
-    actions.push({
-      priority: 1,
-      kind: "fix_fact",
-      title: `Correct the ${factLabel(a.factKey)} claim (${a.count} answer${a.count > 1 ? "s" : ""})`,
-      detail: `AI says "${a.example}" but in fact ${truthText(a.factKey, a.expectedValue)}. Seen on ${a.engines.map(engineName).join(", ")}. Make the correct ${factLabel(a.factKey)} explicit on ${website} (About/Pricing page and structured data)${thirdParty.length ? ` and ask ${thirdParty.join(", ")} to update their listing` : ""}. Brief sales so they can correct it in calls.`,
-    });
-  }
-
-  const worst = drivers?.changes.find((c) => c.contribution < 0);
-  if (worst) {
-    const q = result.prompts.find((p) => p.id === worst.promptId)?.question ?? worst.promptId;
-    const taker = worst.gainers[0];
-    actions.push({
-      priority: 2,
-      kind: "win_question",
-      title: `Win back "${q}"`,
-      detail: `Your points on this question in ${engineName(worst.engine)} fell from ${worst.before.toFixed(0)} to ${worst.after.toFixed(0)}${taker ? ` while ${name(taker)} gained` : ""}. Publish a page that answers this question directly (comparison table, pricing, who it's for) so AI engines have something to quote.`,
-    });
-  }
-
-  const recentWeeks = result.weeks.map((w) => w.week).slice(-3);
-  const gaps = result.prompts
-    .filter((p) => p.priority >= 3)
-    .map((p) => {
-      const rs = result.responses.filter((r) => r.ok && r.promptId === p.id && recentWeeks.includes(r.week));
-      const rate = rs.length ? rs.filter((r) => r.mentions.find((m) => m.brand === focus)?.mentioned).length / rs.length : 0;
-      return { p, rate };
-    })
-    .filter((g) => g.rate < 0.34)
-    .sort((a, b) => a.rate - b.rate);
-  if (gaps[0]) {
-    actions.push({
-      priority: 2,
-      kind: "win_question",
-      title: `Get into answers for "${gaps[0].p.question}"`,
-      detail: `A top-priority buyer question where ${name(focus)} appears in only ${(gaps[0].rate * 100).toFixed(0)}% of recent answers.`,
-    });
-  }
-
-  const competitors = result.brands.filter((b) => b.tier === "tracked" && b.key !== focus).map((b) => b.key);
-  const outreach = competitorOnlySources(result.sources, focus, competitors).filter((s) => s.kind !== "government").slice(0, 3);
-  const underIndexed = underIndexedSources(result.sources, focus, competitors).filter((g) => g.kind !== "government" && g.gap >= 0.1).slice(0, 2);
-  if (outreach.length) {
-    actions.push({
-      priority: 2,
-      kind: "get_listed",
-      title: `Get covered by ${outreach.map((s) => s.domain).join(", ")}`,
-      detail: `AI engines cite these sites in answers that name competitors but never ${name(focus)}. A review, listing or guest guide there gives the engines a reason to include you.`,
-    });
-  } else if (underIndexed.length) {
-    actions.push({
-      priority: 3,
-      kind: "get_listed",
-      title: `Strengthen your presence on ${underIndexed.map((g) => g.domain).join(" and ")}`,
-      detail: underIndexed
-        .map((g) => `Answers citing ${g.domain} name ${name(g.leader)} ${(g.leaderRate * 100).toFixed(0)}% of the time vs ${name(focus)} ${(g.focusRate * 100).toFixed(0)}%.`)
-        .join(" ") + " Fresh reviews and an up-to-date profile there feed what the engines repeat.",
-    });
-  }
-
-  const evidence = result.responses.flatMap((r) => r.mentions.filter((m) => m.brand === focus && m.tone === "negative" && m.toneEvidence).map((m) => m.toneEvidence!));
-  const themes = THEMES.map(([label, re, advice]) => ({ label, advice, n: evidence.filter((e) => re.test(e)).length })).filter((t) => t.n > 0).sort((a, b) => b.n - a.n);
-  if (themes[0]) {
-    actions.push({
-      priority: 3,
-      kind: "fix_perception",
-      title: `Counter the "${themes[0].label}" story`,
-      detail: `AI answers repeat it ${themes[0].n} times when describing ${name(focus)} negatively. ${themes[0].advice} Then encourage fresh reviews on the sites the engines cite, so the newer picture gets picked up.`,
-    });
-  }
-
-  const comp = competitorAlerts[0];
-  if (comp) {
-    actions.push({
-      priority: 3,
-      kind: "sales_brief",
-      title: `Brief sales: AI gets ${possessive(name(comp.brand))} ${factLabel(comp.factKey)} wrong`,
-      detail: `${comp.count} answers say "${comp.example}" (in fact ${truthText(comp.factKey, comp.expectedValue)}). Useful when prospects compare you.`,
-    });
-  }
-  return actions.sort((a, b) => a.priority - b.priority).slice(0, 5);
 }

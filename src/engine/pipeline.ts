@@ -9,8 +9,12 @@ import { sourceStats, type SourceStat } from "./score/sources";
 
 export interface WeekSummary {
   week: number;
+  /** Answers collected this week, including ones that failed. */
   answers: number;
+  /** Collected but unusable (timeouts, empty answers). Usable = answers - failed. */
   failed: number;
+  /** Files this week's answers came from. */
+  files: string[];
   engines: string[];
   missingEngines: string[];
   cells: number;
@@ -73,6 +77,7 @@ function summarizeWeeks(responses: AnalyzedResponse[], cells: Cell[], prompts: P
       week,
       answers: rs.length,
       failed: rs.filter((r) => !r.ok).length,
+      files: [...new Set(rs.map((r) => r.sourceFile))].sort(),
       engines,
       missingEngines,
       cells: weekCells.length,
