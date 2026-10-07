@@ -77,7 +77,7 @@ export function extractPriceClaims(sentence: string): RawClaim[] {
   return claims;
 }
 
-const HQ = /\b(?:based|headquartered|located|hq'?d?)\s+(?:in|out of)\s+((?:[A-Z][a-zA-Z.'-]+)(?:,?\s+(?:[A-Z][a-zA-Z.'-]+)){0,3})/g;
+const HQ = /\b(?:(?:based|headquartered|located|hq'?d?)\s+(?:in|out of)|(?:[Hh][Qq]|[Hh]eadquarters|[Hh]ead office)\s+(?:is|are)\s+(?:located\s+)?in)\s+((?:[A-Z][a-zA-Z.'-]+)(?:,?\s+(?:[A-Z][a-zA-Z.'-]+)){0,3})/g;
 
 export function extractHqClaims(sentence: string): RawClaim[] {
   return [...sentence.matchAll(HQ)].map((m) => ({ factKey: "hq", value: m[1].replace(/[.,]+$/, ""), at: m.index! }));

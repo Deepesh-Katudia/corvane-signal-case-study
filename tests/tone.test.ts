@@ -77,6 +77,18 @@ describe("tone: phrasing seen in the data pack", () => {
     expect(tones(text)).toEqual({ novahaul: "recommended", trakvia: "negative", routelyne: "not_recommended", gridwell: "neutral" });
   });
 
+  it("credits a comparison's verdict to the company it is about", () => {
+    expect(tones("Corvane Fleet is cheaper than Trakvia, so I'd go with Corvane.")).toEqual({ corvane: "recommended", trakvia: "neutral" });
+  });
+
+  it("does not read 'Avoid overpaying' as advice against the company", () => {
+    expect(tones("Avoid overpaying: Corvane Fleet is the safest choice.")).toEqual({ corvane: "recommended" });
+  });
+
+  it("carries 'it' into a new paragraph that starts with it", () => {
+    expect(tones("Many reviewers love Gridwell Systems.\n\nIt is not a good fit for small fleets.")).toEqual({ gridwell: "not_recommended" });
+  });
+
   it("judges each brand on its own part of a shared sentence", () => {
     expect(tones("Avoid Gridwell for small fleets; Corvane Fleet is the safest choice.")).toEqual({ gridwell: "not_recommended", corvane: "recommended" });
   });

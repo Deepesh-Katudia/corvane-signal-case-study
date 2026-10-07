@@ -11,6 +11,7 @@ export interface AttributedUnit extends Unit {
   referent: string | null;
 }
 
+const LEADING_PRONOUN = /^(?:[-*•]\s+)?(?:it|it's|its|they)\b/i;
 const BACK_REFERENCE = /\b(?:it|it's|its|they|their|the company|this one|the platform|the vendor)\b/i;
 
 /** Split an answer into units and work out which company each one talks about. */
@@ -19,7 +20,8 @@ export function attributeUnits(text: string, spans: EntitySpan[]): AttributedUni
   let lastParagraph = -1;
   return segment(text).map((unit) => {
     if (unit.paragraph !== lastParagraph) {
-      lastEntity = null;
+      // A new paragraph that opens with "It ..." still continues the previous company; anything else resets.
+      if (!LEADING_PRONOUN.test(unit.text)) lastEntity = null;
       lastParagraph = unit.paragraph;
     }
     const inside = spans.filter((s) => s.start >= unit.start && s.end <= unit.end);

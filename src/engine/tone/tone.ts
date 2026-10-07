@@ -30,14 +30,58 @@ export function classifyText(text: string): Tone | null {
   return baseTone(clean);
 }
 
-/** For sentences naming several companies, each one is judged on its own stretch of the sentence. */
-function windowFor(unit: AttributedUnit, idx: number): string {
-  const span = unit.spans[idx];
-  const prev = unit.spans.filter((s, i) => i < idx && s.entity !== span.entity).pop();
-  const next = unit.spans.find((s, i) => i > idx && s.entity !== span.entity);
-  const from = prev ? prev.end : unit.start;
-  const to = next ? next.start : unit.end;
-  return unit.text.slice(from - unit.start, to - unit.start);
+/** Clause boundaries: commas, semicolons, colons and "so/while/whereas" joins. */
+const CLAUSE_BREAK = /[,;]\s+|:\s+|\s+(?:so|while|whereas)\s+/g;
+/** In "X is better than Y" / "pick X over Y", the verdict belongs to the company before the comparison word. */
+const COMPARISON = /\b(?:than|over|versus|vs\.?)\b/i;
+
+interface Clause {
+  start: number;
+  end: number;
+  text: string;
+}
+
+function clausesOf(unit: AttributedUnit): Clause[] {
+  const out: Clause[] = [];
+  let from = 0;
+  const push = (to: number) => {
+    if (to > from) out.push({ start: unit.start + from, end: unit.start + to, text: unit.text.slice(from, to) });
+  };
+  for (const m of unit.text.matchAll(CLAUSE_BREAK)) {
+    push(m.index!);
+    from = m.index! + m[0].length;
+  }
+  push(unit.text.length);
+  return out;
+}
+
+/**
+ * Judge a sentence clause by clause. A clause naming a company judges that company; a clause naming none
+ * ("..., so I'd skip it", "..., though reviewers mention a clunky app") judges the company named last in the
+ * sentence, or the next one if none has been named yet ("If I had to pick one, it would be X").
+ */
+function sentenceVerdicts(unit: AttributedUnit): Array<[string, Tone]> {
+  const out: Array<[string, Tone]> = [];
+  let last: string | null = null;
+  let pending: Tone[] = [];
+  for (const clause of clausesOf(unit)) {
+    const spans = unit.spans.filter((sp) => sp.start >= clause.start && sp.end <= clause.end);
+    const tone = classifyText(clause.text);
+    if (!spans.length) {
+      if (!tone) continue;
+      if (last) out.push([last, tone]);
+      else pending = [...pending, tone];
+      continue;
+    }
+    const cmp = clause.text.search(COMPARISON);
+    const cmpAt = cmp >= 0 ? clause.start + cmp : Infinity;
+    const subjects = [...new Set(spans.filter((sp) => sp.start < cmpAt).map((sp) => sp.entity))];
+    for (const t of pending) out.push([subjects[0] ?? spans[0].entity, t]);
+    pending = [];
+    if (tone) for (const e of subjects.length ? subjects : [spans[0].entity]) out.push([e, tone]);
+    last = spans[spans.length - 1].entity;
+  }
+  return out;
 }
 
 function unitVerdicts(unit: AttributedUnit): Array<[string, Tone]> {
@@ -50,18 +94,7 @@ function unitVerdicts(unit: AttributedUnit): Array<[string, Tone]> {
     const tone = classifyText(unit.text);
     return tone ? [[unit.referent!, tone]] : [];
   }
-  const entities = [...new Set(unit.spans.map((s) => s.entity))];
-  if (entities.length === 1) {
-    const tone = classifyText(unit.text);
-    return tone ? [[entities[0], tone]] : [];
-  }
-  const out: Array<[string, Tone]> = [];
-  for (const entity of entities) {
-    const idx = unit.spans.findIndex((s) => s.entity === entity);
-    const tone = classifyText(windowFor(unit, idx));
-    if (tone) out.push([entity, tone]);
-  }
-  return out;
+  return sentenceVerdicts(unit);
 }
 
 /**

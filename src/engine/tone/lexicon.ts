@@ -8,7 +8,7 @@ export const NOT_RECOMMENDED: RegExp[] = [
   /\bavoid\b/,
   /\bsteer clear\b/,
   /\bwouldn'?t (?:choose|recommend|pick|use|go with|buy)\b/,
-  /\b(?:would|do|does) not (?:choose|recommend|pick)\b/,
+  /\b(?:would|will|do|does) not (?:choose|recommend|pick|buy|use)\b/,
   /\b(?:don'?t|can'?t) recommend\b/,
   /\bnot (?:the )?right (?:fit|choice|tool|option)\b/,
   /\bisn'?t (?:the )?right (?:fit|choice|tool|option)\b/,
@@ -43,6 +43,8 @@ export const RECOMMENDED: RegExp[] = [
   /\bwinner\b/,
   /\bis (?:often |widely |highly )?recommended\b/,
   /\bhighly recommend/,
+  /^\s*(?:choose|pick|go with|try)\b/,
+  /\bis (?:the )?better\b|\bbetter (?:choice|option|fit|pick)\b/,
 ];
 
 export const NEGATIVE: RegExp[] = [
@@ -65,6 +67,7 @@ export const NEGATIVE: RegExp[] = [
   /\bcriticis|\bcriticiz/,
   /\bhidden fees\b/,
   /\bsteep learning curve\b/,
+  /\bnot (?:great|good|ideal|impressive)\b/,
 ];
 
 /** Words that hand the final say to whatever follows them ("X is good, but ..."). */

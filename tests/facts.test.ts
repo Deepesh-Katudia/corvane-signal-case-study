@@ -25,6 +25,7 @@ describe("wrong facts about Corvane", () => {
     ["Corvane Fleet is great. It also includes built-in AI dashcams.", "features.dashcams"],
     ["Corvane Fleet is great. It doesn't integrate with QuickBooks.", "integrations"],
     ["Corvane Fleet integrates with Salesforce.", "integrations"],
+    ["Corvane Fleet is solid, and its HQ is in Denver.", "hq"],
   ])("%s", (text, key) => {
     expect(wrong(text)).toEqual([["corvane", key]]);
   });

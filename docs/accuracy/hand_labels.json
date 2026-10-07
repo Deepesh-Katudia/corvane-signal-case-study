@@ -1,0 +1,17 @@
+[
+  { "responseId": "r_4677a7b79985", "mentions": { "corvane": [1, "neutral"], "trakvia": [2, "recommended"] }, "wrongFacts": [] },
+  { "responseId": "r_110435c2047e", "mentions": { "corvane": [1, "recommended"], "novahaul": [2, "neutral"] }, "wrongFacts": ["corvane:features.eld_compliance"], "note": "Judgement call: the ELD caveat after 'best overall' read as a (wrong) factual note, not a change of verdict." },
+  { "responseId": "r_7e71fee5c5d5", "mentions": { "gridwell": [1, "negative"], "trakvia": [2, "negative"] }, "wrongFacts": [] },
+  { "responseId": "r_b0ce309055d6", "mentions": { "gridwell": [1, "not_recommended"], "trakvia": [2, "neutral"], "fleetora": [3, "recommended"], "corvane": [4, "recommended"], "routelyne": [5, "negative"] }, "wrongFacts": ["corvane:starting_price_usd"], "note": "Corvane Logistics disclaimer correctly ignored." },
+  { "responseId": "r_c0f579a6275e", "mentions": { "novahaul": [1, "neutral"], "trakvia": [2, "recommended"] }, "wrongFacts": [] },
+  { "responseId": "r_3efdb525038d", "mentions": { "novahaul": [1, "neutral"], "trakvia": [2, "neutral"] }, "wrongFacts": [] },
+  { "responseId": "r_33fba8da5565", "mentions": { "trakvia": [1, "recommended"], "corvane": [2, "recommended"], "gridwell": [3, "neutral"], "fleetora": [4, "neutral"] }, "wrongFacts": [], "note": "Table answer; verdicts read from the 'Our take' column." },
+  { "responseId": "r_c8990b5b1d85", "mentions": { "fleetora": [1, "recommended"], "gridwell": [2, "negative"], "corvane": [3, "recommended"] }, "wrongFacts": [] },
+  { "responseId": "r_01b413949455", "mentions": { "gridwell": [1, "recommended"], "corvane": [2, "neutral"] }, "wrongFacts": [] },
+  { "responseId": "r_b031351aba4a", "mentions": { "corvane": [1, "recommended"], "gridwell": [2, "neutral"], "routelyne": [3, "not_recommended"] }, "wrongFacts": [] },
+  { "responseId": "r_93edfb0d562e", "mentions": { "fleetora": [1, "neutral"], "routelyne": [2, "negative"] }, "wrongFacts": [] },
+  { "responseId": "r_50f67e20f40d", "mentions": { "corvane": [1, "neutral"] }, "wrongFacts": ["corvane:hq"] },
+  { "responseId": "r_6ee687efcad2", "mentions": { "routelyne": [1, "neutral"], "corvane": [2, "neutral"], "gridwell": [3, "neutral"] }, "wrongFacts": [] },
+  { "responseId": "r_635c93c18d88", "mentions": { "corvane": [1, "recommended"], "trakvia": [2, "negative"], "routelyne": [3, "negative"] }, "wrongFacts": [] },
+  { "responseId": "r_aed80dd09f27", "mentions": { "corvane": [1, "neutral"] }, "wrongFacts": [] }
+]
