@@ -1,0 +1,39 @@
+{
+  "name": "corvane-signal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Corvane Signal: AI visibility tracker for Corvane Fleet",
+  "scripts": {
+    "analyze": "tsx scripts/analyze.ts",
+    "predev": "npm run analyze",
+    "dev": "next dev",
+    "prebuild": "npm run analyze",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "csv-parse": "^7.0.3",
+    "exceljs": "^4.4.0",
+    "langsmith": "^0.10.8",
+    "next": "^16.4.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitest/coverage-v8": "^5.0.3",
+    "postcss": "^8.5.29",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.env
+.env.*
+!.env.example
+.vercel
+# Client brief stays out of the public repo; the data pack is copied into data/ and config/
+docs/AI-Native_Developer_Case_Study_Corvane_Fleet.pdf
+docs/corvane_data_pack/
