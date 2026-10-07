@@ -13,9 +13,9 @@ Being named first counts fully. Being named later counts a bit less. The score i
 
 **Why it moved, honestly.** AI engines give different answers when you ask the same question twice. That alone moves a weekly score by about ±10 points. So the tool only calls a change confirmed when it is bigger than what re-asking normally produces, and otherwise says it is "not yet confirmed". It also never compares a full week with an incomplete one. Week 5 had no Perplexity answers, so that week is compared only on the questions and engines collected in both weeks. That avoids a false drop.
 
-**What it says today.**
-- **Last week's moves are not confirmed.** Scores did move, but no single week's change is bigger than normal variation.
-- **The three-week view is clear.** Weeks 4–6 compared with weeks 1–3 show **a confirmed decline for Corvane (about −7 points)**, mostly on the field-service and pricing questions. **Routelyne has a confirmed rise (+12).** Trakvia now leads on score.
+**Findings from the original six-week dataset (weeks 1–6).** These are the findings at submission. The dashboard updates as new weeks are added, so its current view may differ.
+- **Week 6 vs week 5: no change is confirmed.** Scores did move, but none of the changes is bigger than normal variation.
+- **The three-week view is clear.** Weeks 4–6 compared with weeks 1–3 show **a confirmed decline for Corvane (about −7 points)**, mostly on the field-service and pricing questions. **Routelyne has a confirmed rise (+12).** In week 6, Trakvia led on score (43 vs Corvane's 34).
 - **AI engines are spreading false facts about us.** They say we're headquartered in Chicago or in Columbus, Georgia, that we were founded in 2009, that we charge $45–49, that we lack ELD compliance or QuickBooks integration, and that we sell dashcams.
 - **Fix those first, pricing and missing features before the rest.** Make the facts unmissable on corvanefleet.com, check the pages the engines cite and ask for corrections where those pages are wrong, and brief sales so they're ready when a prospect repeats them.
 

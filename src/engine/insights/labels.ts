@@ -32,5 +32,14 @@ export const possessive = (n: string): string => (n.endsWith("s") ? `${n}'` : `$
 
 export const listJoin = (xs: string[]): string => (xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
-export const questionHref = (promptId: string, engine?: string, week: number | "all" = "all"): string =>
-  `/questions?week=${week}&prompt=${encodeURIComponent(promptId)}${engine ? `&engine=${encodeURIComponent(engine)}` : ""}`;
+/**
+ * Link to the answers for one question (optionally one engine). With `compareWeeks`, the page shows only
+ * those weeks side by side (e.g. [6, 7] for "week 7 vs week 6"); otherwise every week.
+ */
+export const questionHref = (promptId: string, engine?: string, compareWeeks?: number[]): string =>
+  `/questions?prompt=${encodeURIComponent(promptId)}${engine ? `&engine=${encodeURIComponent(engine)}` : ""}${
+    compareWeeks?.length ? `&weeks=${compareWeeks.join(",")}` : "&week=all"
+  }`;
+
+/** "weeks 5–7" / "week 7". */
+export const weekSpan = (ws: number[]): string => (ws.length > 1 ? `weeks ${ws[0]}–${ws[ws.length - 1]}` : `week ${ws[0]}`);

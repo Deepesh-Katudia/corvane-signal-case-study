@@ -2,7 +2,7 @@ import type { AnalysisResult } from "../pipeline";
 import type { WeekComparison } from "../score/compare";
 import { groupAlerts, type FactAlert } from "./alerts";
 import { buildActions, type Action } from "./actions";
-import { factTopic, listJoin, possessive, questionHref } from "./labels";
+import { factTopic, listJoin, possessive, questionHref, weekSpan } from "./labels";
 
 export { factLabel, truthText, possessive } from "./labels";
 export type { FactAlert } from "./alerts";
@@ -76,23 +76,37 @@ function statusSentence(focusName: string, focusCard: ScoreCard, leader: ScoreCa
   return `${position} No clear change.`;
 }
 
-function watchLine(focusName: string, focusCard: ScoreCard, cards: ScoreCard[]): ExecLine {
+interface Periods {
+  /** "weeks 5–7 compared with weeks 2–4" */
+  trend: string | null;
+  /** "week 7 compared with week 6" */
+  weekly: string | null;
+}
+
+const signedPts = (d: number) => `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(1)} points`;
+
+/** Says exactly which periods are compared, so "+5.8 points" is not read as a start-to-end increase. */
+function watchLine(focusName: string, focusCard: ScoreCard, cards: ScoreCard[], periods: Periods): ExecLine {
   const t = focusCard.trend;
-  if (t?.movement === "real_drop" && t.delta !== null) return { label: "Watch", text: `${possessive(focusName)} 3-week decline (down ${Math.abs(t.delta).toFixed(1)} points, confirmed).` };
+  if (t?.movement === "real_drop" && t.delta !== null && periods.trend) {
+    return { label: "Watch", text: `${possessive(focusName)} longer-term decline (${signedPts(t.delta)}: ${periods.trend}, confirmed).` };
+  }
   const risers = cards
     .filter((c) => !c.isFocus)
     .flatMap((c) => [
-      c.trend?.movement === "real_gain" ? { c, delta: c.trend.delta ?? 0, span: "longer-term rise", period: "over 3 weeks" } : null,
-      c.weekly?.movement === "real_gain" ? { c, delta: c.weekly.delta ?? 0, span: "jump this week", period: "since last week" } : null,
+      c.trend?.movement === "real_gain" && periods.trend ? { c, delta: c.trend.delta ?? 0, what: "longer-term rise", period: periods.trend } : null,
+      c.weekly?.movement === "real_gain" && periods.weekly ? { c, delta: c.weekly.delta ?? 0, what: "jump this week", period: periods.weekly } : null,
     ])
     .filter((x): x is NonNullable<typeof x> => x !== null)
     .sort((a, b) => b.delta - a.delta);
   if (risers[0]) {
     const r = risers[0];
-    return { label: "Watch", text: `${possessive(r.c.name)} ${r.span} (up ${r.delta.toFixed(1)} points ${r.period}, confirmed).` };
+    return { label: "Watch", text: `${possessive(r.c.name)} ${r.what} (${signedPts(r.delta)}: ${r.period}, confirmed).` };
   }
-  if (t?.movement === "real_gain" && t.delta !== null) return { label: "Watch", text: `${possessive(focusName)} 3-week rise (up ${t.delta.toFixed(1)} points, confirmed): keep doing what works.` };
-  return { label: "Watch", text: "Nothing beyond normal variation in the last 3 weeks." };
+  if (t?.movement === "real_gain" && t.delta !== null && periods.trend) {
+    return { label: "Watch", text: `${possessive(focusName)} longer-term rise (${signedPts(t.delta)}: ${periods.trend}, confirmed): keep doing what works.` };
+  }
+  return { label: "Watch", text: "Nothing beyond normal variation in recent weeks." };
 }
 
 function thisWeekLine(alerts: FactAlert[], actions: Action[]): ExecLine {
@@ -157,20 +171,26 @@ export function buildBrief(result: AnalysisResult, focus = result.perspective): 
   const whyMovedNote = confirmed
     ? null
     : "Overall, last week's change is within normal variation, so these are the biggest swings to watch, not confirmed trends.";
+  // The two periods the movement compares, so links open exactly those weeks side by side.
+  const compareWeeks: number[] = useTrend
+    ? [...result.trend!.earlierWeeks, ...result.trend!.recentWeeks]
+    : result.previousWeek !== null && latest !== null
+      ? [result.previousWeek, latest]
+      : [];
   const whyMoved: Movement[] = (drivers?.changes ?? []).slice(0, 4).map((c) => {
     const lost = c.contribution < 0;
     const gainers = lost ? c.gainers.slice(0, 2).map(name) : [];
     return {
       direction: lost ? "down" : "up",
       text: `${lost ? "Lost" : "Gained"} ground on "${question(c.promptId)}" in ${engineName(c.engine)} (${c.before.toFixed(0)} → ${c.after.toFixed(0)} points)${gainers.length ? `; ${listJoin(gainers)} gained there` : ""}.`,
-      href: questionHref(c.promptId, c.engine),
+      href: questionHref(c.promptId, c.engine, compareWeeks),
     };
   });
 
   const takers = (drivers?.takers ?? []).slice(0, 3).map((t) => ({ brand: t.brand, name: name(t.brand), gained: t.gained, questions: t.promptIds.map(question) }));
   const alerts = groupAlerts(result.wrongFacts.filter((f) => f.brand === focus), result);
   const competitorAlerts = groupAlerts(result.wrongFacts.filter((f) => f.brand !== focus), result);
-  const actions = buildActions(result, focus, alerts, competitorAlerts, drivers, confirmed);
+  const actions = buildActions(result, focus, alerts, competitorAlerts, drivers, confirmed, compareWeeks);
 
   const visibility: ExecLine = {
     label: "Visibility",
@@ -185,7 +205,10 @@ export function buildBrief(result: AnalysisResult, focus = result.perspective): 
     latestWeek: latest,
     previousWeek: result.previousWeek,
     status: statusSentence(name(focus), focusCard, leader),
-    execLines: [visibility, watchLine(name(focus), focusCard, cards), thisWeekLine(alerts, actions)],
+    execLines: [visibility, watchLine(name(focus), focusCard, cards, {
+        trend: result.trend ? `${weekSpan(result.trend.recentWeeks)} compared with ${weekSpan(result.trend.earlierWeeks)}` : null,
+        weekly: result.previousWeek !== null ? `week ${latest} compared with week ${result.previousWeek}` : null,
+      }), thisWeekLine(alerts, actions)],
     dataLine: dataLine(result, engineName),
     partialNote,
     cards,

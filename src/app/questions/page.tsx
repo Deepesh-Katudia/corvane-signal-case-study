@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAnalysis } from "@/server/analysis";
 import { Filters } from "@/components/Filters";
+import { WeekComparison } from "@/components/WeekComparison";
 import { Empty, Section, ToneChip } from "@/components/ui";
 import { STAGE_LABEL, TONE_LABEL, TONE_VAR, pct } from "@/lib/format";
 import type { AnalyzedResponse } from "@/engine/types";
@@ -30,7 +31,7 @@ function RunDots({ runs, brand }: { runs: AnalyzedResponse[]; brand: string }) {
 
 export default async function QuestionsPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-  const { result } = await getAnalysis();
+  const { result, config } = await getAnalysis();
   const focus = result.perspective;
   const name = (k: string) => result.brands.find((b) => b.key === k)?.name ?? k;
   const engines = [...new Set(result.responses.map((r) => r.engine))].sort();
@@ -42,17 +43,24 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
   const prompt = one(sp.prompt);
   const company = one(sp.company);
   const shown = one(sp.shown);
+  // ?weeks=6,7 (from a "compare" link): show only those weeks, newest first, with a side-by-side summary.
+  const compareWeeks = [...new Set(one(sp.weeks).split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0))].sort((a, b) => a - b);
+  const comparing = compareWeeks.length >= 2;
+  const inWeek = (w: number) => (comparing ? compareWeeks.includes(w) : week === "all" || String(w) === week);
+  const half = Math.floor(compareWeeks.length / 2);
+  const periods: [number[], number[]] = [compareWeeks.slice(0, half), compareWeeks.slice(half)];
+  const periodLabel = (ws: number[]) => (ws.length > 1 ? `weeks ${ws[0]}–${ws[ws.length - 1]}` : `week ${ws[0]}`);
 
   const prompts = result.prompts.filter((p) => (!stage || p.stage === stage) && (!prompt || p.id === prompt));
   const promptIds = new Set(prompts.map((p) => p.id));
   const answers = result.responses.filter(
     (r) =>
-      (week === "all" || String(r.week) === week) &&
+      inWeek(r.week) &&
       (!engine || r.engine === engine) &&
       promptIds.has(r.promptId) &&
       (!company || (shown === "missing" ? !r.mentions.find((m) => m.brand === company)?.mentioned : r.mentions.find((m) => m.brand === company)?.mentioned)),
-  );
-  const matrixWeekAnswers = result.responses.filter((r) => week === "all" || String(r.week) === week);
+  ).sort((a, b) => (comparing ? b.week - a.week : 0));
+  const matrixWeekAnswers = result.responses.filter((r) => inWeek(r.week));
   const recentWeeks = result.weeks.map((w) => w.week).slice(-4);
   const question = new Map(result.prompts.map((p) => [p.id, p]));
 
@@ -67,9 +75,28 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
         </p>
       </header>
 
+      {comparing && (
+        <section className="rise space-y-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <div>
+              <p className="kicker">Comparison</p>
+              <h2 className="font-serif text-2xl leading-tight">
+                {question.get(prompt)?.question ?? "Selected questions"}
+                {engine && <span className="text-ink-3"> · {engineName(engine)}</span>}: {periodLabel(periods[1])} vs {periodLabel(periods[0])}
+              </h2>
+            </div>
+            <Link className="link text-sm" href={`/questions?week=all${prompt ? `&prompt=${prompt}` : ""}${engine ? `&engine=${engine}` : ""}`}>
+              Show all weeks →
+            </Link>
+          </div>
+          <WeekComparison answers={answers} periods={periods} focus={focus} focusName={name(focus)} scoring={config.scoring} brandName={name} />
+        </section>
+      )}
+
       <Filters
+        hidden={comparing ? { weeks: compareWeeks.join(",") } : {}}
         filters={[
-          { name: "week", label: "Week", value: week, options: [...result.weeks.map((w) => ({ value: String(w.week), label: `Week ${w.week}${w.partial ? " (incomplete)" : ""}` })), { value: "all", label: "All weeks" }] },
+          ...(comparing ? [] : [{ name: "week", label: "Week", value: week, options: [...result.weeks.map((w) => ({ value: String(w.week), label: `Week ${w.week}${w.partial ? " (incomplete)" : ""}` })), { value: "all", label: "All weeks" }] }]),
           { name: "engine", label: "Engine", value: engine, options: [{ value: "", label: "All engines" }, ...engines.map((e) => ({ value: e, label: engineName(e) }))] },
           { name: "stage", label: "Buying stage", value: stage, options: [{ value: "", label: "All stages" }, ...Object.entries(STAGE_LABEL).map(([v, l]) => ({ value: v, label: l }))] },
           { name: "prompt", label: "Question", value: prompt, options: [{ value: "", label: "All questions" }, ...result.prompts.map((p) => ({ value: p.id, label: `${p.id} · ${p.question.slice(0, 48)}` }))] },
@@ -79,7 +106,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
       />
 
       <Section
-        kicker={week === "all" ? "All weeks" : `Week ${week}`}
+        kicker={comparing ? `Weeks ${compareWeeks.join(", ")}` : week === "all" ? "All weeks" : `Week ${week}`}
         title="Coverage by question and engine"
         aside={
           <ul className="flex flex-wrap gap-3 text-xs text-ink-2" aria-label="Legend">

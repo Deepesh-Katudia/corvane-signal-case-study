@@ -22,10 +22,17 @@ function ActionCard({ a, n }: { a: Action; n: number }) {
             <span className="text-ink-3">Owner: {a.owner}</span>
           </p>
           <p className="mt-1 font-medium leading-snug">{a.title}</p>
-          <p className="mt-1 text-sm leading-relaxed text-ink-2">{a.detail}</p>
-          <Link className="link mt-2 inline-block text-sm" href={a.evidence.href}>
+          <p className="mt-1.5 text-sm leading-snug">
+            <span className="kicker mr-1.5">Next</span>
+            {a.next}
+          </p>
+          <Link className="link mt-1.5 inline-block text-sm" href={a.evidence.href}>
             {a.evidence.label} →
           </Link>
+          <details className="mt-2 text-sm text-ink-2">
+            <summary className="cursor-pointer text-xs text-ink-3 hover:text-ink">Why this matters</summary>
+            <p className="mt-1 leading-relaxed">{a.why}</p>
+          </details>
         </div>
       </div>
     </Card>

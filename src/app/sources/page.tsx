@@ -17,14 +17,14 @@ export default async function SourcesPage() {
     <div className="space-y-10 pt-4">
       <header className="rise">
         <p className="kicker">Citations</p>
-        <h1 className="font-serif text-4xl tracking-tight">Which websites the AI engines lean on</h1>
+        <h1 className="font-serif text-4xl tracking-tight">Which websites AI answers cite</h1>
         <p className="mt-2 max-w-3xl text-ink-2">
-          Citations are the pages an engine lists as its sources. They do not count as mentions, but they show where engines learn about this market and where {name(focus)} needs to
-          be present.
+          Citations are the pages an AI answer lists as its sources. This page shows which companies are mentioned in the answers that cite each website. It does not show what
+          the website itself says: a site cited next to a competitor has not necessarily recommended that competitor. Citations never count as mentions.
         </p>
       </header>
 
-      <Section kicker="Gaps" title={`Sources that cite competitors but never ${name(focus)}`}>
+      <Section kicker="Gaps" title={`Sites cited in answers that mention competitors but never ${name(focus)}`}>
         {never.length ? (
           <ul className="flex flex-wrap gap-2">
             {never.map((s) => (
@@ -35,13 +35,13 @@ export default async function SourcesPage() {
           </ul>
         ) : (
           <p className="max-w-3xl text-sm text-ink-2">
-            None in this data: every third-party site cited alongside a competitor is also cited alongside {name(focus)} at least once. The table below instead highlights where{" "}
-            {name(focus)} is <strong>under-represented</strong>: sites where a competitor is named noticeably more often in the answers that cite them.
+            None in this data: every third-party site cited in an answer that mentions a competitor is also cited in at least one answer that mentions {name(focus)}. The table
+            below instead highlights where {name(focus)} is <strong>mentioned less often</strong>: sites whose citing answers mention a competitor noticeably more often.
           </p>
         )}
       </Section>
 
-      <Section kicker={`${result.sources.length} websites`} title="Who appears in answers that cite each site">
+      <Section kicker={`${result.sources.length} websites · across all ${result.weeks.length} weeks`} title="Companies mentioned in the answers that cite each site">
         <div className="overflow-x-auto rounded-lg border border-rule bg-card">
           <table className="w-full min-w-[760px] text-sm">
             <thead>
@@ -78,7 +78,7 @@ export default async function SourcesPage() {
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-ink-3">Percentages: share of answers citing the site that name each company. Highlighted rows: a competitor leads {name(focus)} by 10+ points.</p>
+        <p className="mt-2 text-xs text-ink-3">Percentages: of the answers that cite the site, the share that mention each company (all {result.weeks.length} weeks). Highlighted rows: a competitor is mentioned 10+ points more often than {name(focus)}.</p>
       </Section>
     </div>
   );

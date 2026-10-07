@@ -43,7 +43,7 @@ describe("executive opening", () => {
   it("has Visibility, Watch and This week lines", () => {
     expect(sevenWeeks.execLines.map((l) => l.label)).toEqual(["Visibility", "Watch", "This week"]);
     expect(sevenWeeks.execLines[0].text).toMatch(/^43\/100 · up 8\.9 points since last week, within normal variation \(not yet confirmed\)\.$/);
-    expect(sevenWeeks.execLines[1].text).toMatch(/Gridwell Systems' longer-term rise/);
+    expect(sevenWeeks.execLines[1].text).toBe("Gridwell Systems' longer-term rise (+5.8 points: weeks 5–7 compared with weeks 2–4, confirmed).");
     expect(sevenWeeks.execLines[2].text).toMatch(/^Investigate incorrect (pricing and headquarters|headquarters and pricing) claims/);
   });
 
@@ -80,13 +80,13 @@ describe("actions", () => {
     const facts = sevenWeeks.actions.filter((a) => a.kind === "fix_fact");
     expect(facts.length).toBeGreaterThan(0);
     for (const a of facts) {
-      expect(a.detail).not.toMatch(/update their listing/);
-      expect(a.detail).toMatch(/if their information is wrong, request a correction/);
+      expect(a.why).not.toMatch(/update their listing/);
+      expect(a.why).toMatch(/if their information is wrong, request a correction/);
     }
   });
 
   it("says 'watch' when the movement is not confirmed and 'win back' when it is", () => {
-    expect(sevenWeeks.actions.some((a) => a.kind === "win_question" && a.title.startsWith("Win back"))).toBe(false);
-    expect(sixWeeks.actions.find((a) => a.title.startsWith("Win back"))).toBeTruthy();
+    expect(sevenWeeks.actions.find((a) => a.title.startsWith("Watch"))?.kind).toBe("watch_question");
+    expect(sixWeeks.actions.find((a) => a.kind === "win_question" && a.next.startsWith("Publish a page"))).toBeTruthy();
   });
 });
