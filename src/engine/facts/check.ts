@@ -69,12 +69,45 @@ export function judgeClaim(claim: RawClaim, facts: BrandFacts | undefined): Judg
 }
 
 /** The claim sentence as a reader would quote it: no bullets, bold labels or [n] citation markers. */
-export function cleanClaimText(text: string): string {
-  return text
-    .replace(/^\s*(?:[-*•]|\d+\.)\s+/, "")
-    .replace(/\*\*[^*]+\*\*:?\s*/g, "")
-    .replace(/\s*\[\d+\]/g, "")
-    .trim();
+const LEADING_TRIM = [
+  /^(?:[-*•]|\d+\.)\s+/, // list marker
+  /^\[\d+\]\s*/, // citation marker carried over from the previous sentence
+  /^\*\*[^*]{1,80}\*\*:\s*/, // "**Corvane Fleet**: " heading
+  /^\*\*[^*]{1,80}:\*\*\s*/, // "**If budget matters:** " label
+];
+const TRAILING_TRIM = /\s*\[\d+\]\s*$/;
+
+/**
+ * The claim as it appears in the answer: a verbatim substring of the answer text. Only list markers,
+ * a leading label and citation markers are trimmed, and only at the edges; nothing inside the sentence
+ * (bold words included) is ever removed.
+ */
+export function claimTextFrom(sentence: string): string {
+  let s = sentence.trim();
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const re of LEADING_TRIM) {
+      const next = s.replace(re, "");
+      if (next !== s && next.trim()) {
+        s = next;
+        changed = true;
+      }
+    }
+  }
+  while (TRAILING_TRIM.test(s)) s = s.replace(TRAILING_TRIM, "");
+  return s.trim();
+}
+
+/** The text with markdown emphasis markers removed, plus a map from plain offsets back to the original. */
+export function withoutMarkdown(text: string): { plain: string; toOriginal: (i: number) => number } {
+  const offsets: number[] = [];
+  let plain = "";
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "*" || (text[i] === "_" && text[i + 1] === "_") || (text[i] === "_" && text[i - 1] === "_")) continue;
+    offsets.push(i);
+    plain += text[i];
+  }
+  return { plain, toOriginal: (i) => offsets[Math.min(i, offsets.length - 1)] ?? 0 };
 }
 
 function displayValue(claim: RawClaim): string {
@@ -92,13 +125,16 @@ export function checkFacts(responseId: string, units: AttributedUnit[], facts: R
   const out: FactClaim[] = [];
   const seen = new Set<string>();
   for (const unit of units) {
-    for (const claim of extractAllClaims(unit.text)) {
-      const entity = entityAt(unit, unit.start + claim.at);
+    // Read claims from the sentence without markdown ("headquartered in **Chicago**"), but report the
+    // sentence exactly as written and attribute each claim by its position in the original text.
+    const { plain, toOriginal } = withoutMarkdown(unit.text);
+    for (const claim of extractAllClaims(plain)) {
+      const entity = entityAt(unit, unit.start + toOriginal(claim.at));
       if (!entity || entity.startsWith("excluded:") || !facts[entity]) continue;
       // "Most providers charge $40..." after a company is a market statement, not a claim about that company.
       if (claim.factKey === "starting_price_usd" && unit.spans.length === 0 && MARKET_WIDE.test(unit.text)) continue;
       const { verdict, expected } = judgeClaim(claim, facts[entity]);
-      const claimText = cleanClaimText(unit.text);
+      const claimText = claimTextFrom(unit.text);
       const key = `${entity}|${claim.factKey}|${claim.value}|${claimText}`;
       if (seen.has(key)) continue;
       seen.add(key);

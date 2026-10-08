@@ -104,7 +104,7 @@ export default async function AnswerPage({ params }: { params: Promise<{ id: str
                       {c.verdict}
                     </span>
                     <span className="font-medium">{name(c.brand)}</span> · {factLabel(c.factKey)}
-                    <p className="mt-1 text-ink-2">“{c.claimText}”</p>
+                    <p className="mt-1 text-ink-2">“{stripMarkdown(c.claimText)}”</p>
                     {c.verdict === "wrong" && <p className="text-xs text-ink-3">In fact {truthText(c.factKey, c.expectedValue)}.</p>}
                     {c.verdict === "unverified" && <p className="text-xs text-ink-3">Not covered by our facts file, so not flagged.</p>}
                   </li>

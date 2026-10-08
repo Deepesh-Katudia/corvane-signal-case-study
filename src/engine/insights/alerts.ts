@@ -1,6 +1,7 @@
 import type { AnalysisResult } from "../pipeline";
 import type { FactClaim } from "../types";
 import { domainOf } from "../score/sources";
+import { plainText } from "./labels";
 
 export type Impact = "high" | "medium" | "low";
 
@@ -62,7 +63,7 @@ export function groupAlerts(claims: FactClaim[], result: AnalysisResult): FactAl
         factKey: first.factKey,
         claimedValue: first.claimedValue,
         expectedValue: first.expectedValue,
-        example: cs[cs.length - 1].claimText,
+        example: plainText(cs[cs.length - 1].claimText),
         count: cs.length,
         engines: [...new Set(rs.map((r) => r.engine))],
         weeks,

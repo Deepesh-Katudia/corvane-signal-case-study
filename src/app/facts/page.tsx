@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAnalysis } from "@/server/analysis";
 import { buildBrief, factLabel, truthText, type FactAlert } from "@/engine/insights/brief";
 import { Empty, Section } from "@/components/ui";
+import { stripMarkdown } from "@/lib/format";
 
 const IMPACT_LABEL: Record<FactAlert["impact"], string> = { high: "High business impact", medium: "Medium business impact", low: "Lower impact" };
 
@@ -97,7 +98,7 @@ export default async function FactsPage() {
           <ul className="space-y-1 text-sm text-ink-2">
             {unverifiedGroups.map(([text, n]) => (
               <li key={text}>
-                “{text}” <span className="num text-ink-3">×{n} across all weeks</span>
+                “{stripMarkdown(text)}” <span className="num text-ink-3">×{n} across all weeks</span>
               </li>
             ))}
           </ul>

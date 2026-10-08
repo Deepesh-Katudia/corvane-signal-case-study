@@ -30,7 +30,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     );
   }
   const { result } = await getAnalysis();
-  const client = result.brands.find((b) => b.tier === "client")!;
+  // Whose view this dashboard shows: the client by default, or the brand set as "perspective" in config/settings.json.
+  const viewer = result.brands.find((b) => b.key === result.perspective)!;
   const latest = result.weeks.find((w) => w.week === result.latestWeek);
 
   return (
@@ -41,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <div className="flex items-baseline gap-3">
                 <span className="font-serif text-3xl font-semibold tracking-tight">Corvane Signal</span>
-                <span className="kicker hidden sm:inline">AI visibility · {client.name}</span>
+                <span className="kicker hidden sm:inline">AI visibility · {viewer.name}</span>
               </div>
               <span className="kicker num">
                 Week {result.latestWeek} · {fmtDate(latest?.firstCollected ?? null)}–{fmtDate(latest?.lastCollected ?? null)} · {latest?.answers ?? 0} answers this week · {result.responses.length} across {result.weeks.length} weeks

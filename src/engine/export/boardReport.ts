@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import type { AnalysisResult } from "../pipeline";
 import { competitorOnlySources } from "../score/sources";
+import { plainText } from "../insights/labels";
 
 const MONTH_WEEKS = 4;
 const pct = (x: number) => Math.round(x * 1000) / 10;
@@ -101,7 +102,7 @@ export function buildBoardReport(result: AnalysisResult, perspective = result.pe
     ["Week", "Engine", "Question", "Company", "Fact", "What the AI said", "What is true", "Response ID"],
     result.wrongFacts.map((f) => {
       const r = byId.get(f.responseId);
-      return [r?.week, r?.engine, question.get(r?.promptId ?? "") ?? r?.promptId, name(f.brand), f.factKey, f.claimText, f.expectedValue, f.responseId];
+      return [r?.week, r?.engine, question.get(r?.promptId ?? "") ?? r?.promptId, name(f.brand), f.factKey, plainText(f.claimText), f.expectedValue, f.responseId];
     }),
   );
 

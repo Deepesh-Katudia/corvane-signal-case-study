@@ -122,7 +122,7 @@ Every answer gives each company points: **100** if it recommends it, **50** if i
   - Prices said to be "about/around" get ±5%.
   - "Ohio" or "Columbus" alone is consistent with "Columbus, Ohio"; "Columbus, Georgia" is not.
   - Ratings, support hours and customer types aren't in `facts.json`, so they are shown as unverified and never flagged.
-- **`claim_text`** is the sentence containing the claim, with markdown bullets, bold labels and `[n]` markers removed.
+- **`claim_text`** is the claim exactly as it appears in the answer: a verbatim substring of the answer text. Only a list marker, a leading label (e.g. `**Bottom line:**`) and `[n]` citation markers are trimmed, and only at the edges; nothing inside the sentence, bold words included, is removed. A test checks every exported claim is a substring of its answer. Markdown is hidden only on screen.
 - **Incomplete weeks.** A week is incomplete if an engine is missing or coverage is below 90%.
 - **Sources.** No third-party site in this data cites competitors without ever citing Corvane, at domain or page level. The Sources page says so, and shows where Corvane is under-represented instead.
 
@@ -131,7 +131,7 @@ Every answer gives each company points: **100** if it recommends it, **50** if i
 1. **The graded core first:** detection, position, tone, wrong facts, the exact CSV format, and handling the messy data. Wrong answers here make every later screen wrong, and the export is checked against an answer key on unseen data. That's why the engine is plain rules, deterministic, and tested on formats the data pack doesn't contain.
 2. **A score that tells the truth about uncertainty.** Marcus asked for "one number" but also "why it moved". With two runs per question, weekly moves are mostly noise, so the tool says that rather than inventing stories. It explains the moves that are real.
 3. **The Monday screen**, then Priya's detail view, because they turn numbers into decisions.
-4. **All stretch items,** in order of usefulness: competitor fact-checking (cheap once the fact engine existed, and directly useful to sales), head-to-head, sources, no hard-coding, board report. A hosted deployment was left out: the brief values one local command, and a local tool needs no accounts or keys.
+4. **Six of the seven stretch items,** in order of usefulness: competitor fact-checking (cheap once the fact engine existed, and directly useful to sales), head-to-head, sources, no hard-coding, board report. A hosted deployment was left out: the brief values one local command, and a local tool needs no accounts or keys.
 
 Deliberately left out:
 - **Sentiment models and LLM labelling.** The brief rules out paid APIs, and rules are explainable and auditable.

@@ -27,6 +27,9 @@ export function truthText(factKey: string, expected: string | null): string {
   return expected;
 }
 
+/** For display only: drop markdown emphasis markers (the scoring export keeps the verbatim text). */
+export const plainText = (s: string): string => s.replace(/\*\*|__/g, "");
+
 /** "Gridwell Systems" -> "Gridwell Systems'", "Trakvia" -> "Trakvia's". */
 export const possessive = (n: string): string => (n.endsWith("s") ? `${n}'` : `${n}'s`);
 
