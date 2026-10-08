@@ -9,7 +9,7 @@
 
 ## Run it (5 minutes)
 
-Requires **Node 20+**. No API keys, accounts or databases: everything runs on your laptop with rules and open-source libraries. Nothing calls an AI service or any other paid API.
+Requires **Node.js 24 LTS** (recommended; the minimum is 22.12, because the test runner, Vitest 5, does not support older versions). Check with `node -v`; with nvm, `nvm use` picks up the version in `.nvmrc`. No API keys, accounts or databases: everything runs on your laptop with rules and open-source libraries. Nothing calls an AI service or any other paid API.
 
 **1. Install**
 
@@ -99,10 +99,10 @@ Every answer gives each company points: **100** if it recommends it, **50** if i
 1. **Like-for-like.** A week is compared with the previous one only on question/engine pairs collected in both. Week 5 has no Perplexity answers, so it can't produce a false drop.
 2. **Confirmed or not.** The two weeks' runs are shuffled within each pair 2,000 times (seeded, so results are reproducible). A change is **confirmed** only if it's bigger than 95% of the shuffled changes. Otherwise it is labelled **not yet confirmed**: the score did move, but there is no clear evidence it is more than normal variation (week to week, that variation is about ±10 points). The brief also compares the latest 3 weeks with the 3 before them, which is where confirmed movement usually shows up.
 
-What the data says today:
+**Findings from the original six-week dataset (weeks 1–6).** The dashboard updates as new weeks are added, so its current view may differ.
 - **Corvane:** −6.9 over weeks 4–6 vs 1–3, a confirmed fall.
-- **Routelyne:** +11.7, a confirmed rise.
-- **Trakvia:** now leads on score.
+- **Routelyne:** +11.7 over the same weeks, a confirmed rise.
+- **Trakvia:** led on score in week 6 (43 vs Corvane's 34).
 - **Wrong facts:** 95 false claims (47 about Corvane).
 
 ## Assumptions
