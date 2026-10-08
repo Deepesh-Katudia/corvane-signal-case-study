@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
-import { getAnalysis } from "@/server/analysis";
+import { DATA_DIR, getAnalysis } from "@/server/analysis";
+import { missingDataPackFiles } from "@/engine/config/loadConfig";
 
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", display: "swap" });
 const plexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-sans", display: "swap" });
@@ -19,6 +20,15 @@ export const dynamic = "force-dynamic";
 const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "");
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  if (missingDataPackFiles(DATA_DIR).length) {
+    return (
+      <html lang="en" className={`${fraunces.variable} ${plexSans.variable} ${plexMono.variable}`}>
+        <body className="min-h-screen">
+          <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">{children}</div>
+        </body>
+      </html>
+    );
+  }
   const { result } = await getAnalysis();
   const client = result.brands.find((b) => b.tier === "client")!;
   const latest = result.weeks.find((w) => w.week === result.latestWeek);

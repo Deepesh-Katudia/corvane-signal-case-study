@@ -7,26 +7,76 @@
 
 ---
 
-## Run it
+## Run it (5 minutes)
 
-Requires Node 20+.
+Requires **Node 20+**. No API keys, accounts or databases: everything runs on your laptop with rules and open-source libraries. Nothing calls an AI service or any other paid API.
+
+**1. Install**
 
 ```bash
+git clone <this repository>
+cd <the cloned folder>
 npm install
-npm run dev          # analyses data/ and opens the app at http://localhost:3000
 ```
+
+**2. Add the data pack.** It is not included in this repository. Copy the four files from your `corvane_data_pack` folder into `data/`:
+
+```
+data/brands.json
+data/facts.json
+data/prompts.csv
+data/responses.jsonl
+```
+
+```bash
+# macOS / Linux / Git Bash
+cp path/to/corvane_data_pack/{brands.json,facts.json,prompts.csv,responses.jsonl} data/
+```
+
+```powershell
+# Windows PowerShell
+Copy-Item path\to\corvane_data_pack\* data\ -Include brands.json,facts.json,prompts.csv,responses.jsonl
+```
+
+If a file is missing, the app opens a setup page that lists exactly which one, and `npm test` stops with the same instructions.
+
+**3. Start the app** and open http://localhost:3000
+
+```bash
+npm run dev
+```
+
+**4. Produce the scoring export** (`mentions.csv`, `wrong_facts.csv`), plus the board report:
+
+```bash
+npm run analyze                                          # data/ -> out/
+npm run analyze -- --data path/to/unseen_week.jsonl --out results/   # any file or folder
+```
+
+`--data` accepts a single file or a folder of `.jsonl`, `.json`, `.csv` or `.xlsx` files; `brands.json`/`facts.json` are read from the same folder if present, otherwise from `data/`.
 
 | Command | What it does |
 |---|---|
-| `npm run analyze` | Writes `out/mentions.csv`, `out/wrong_facts.csv`, `out/board_report.xlsx` and `out/analysis.json` from everything in `data/` |
-| `npm run analyze -- --data path/to/new_week.jsonl --out results/` | Runs on any file or folder, e.g. unseen data |
-| `npm test` | 137 tests (detection, tone, facts, scoring, formats, Excel weeks, brief wording) |
+| `npm run dev` | The web app at http://localhost:3000 |
+| `npm run analyze` | `out/mentions.csv`, `out/wrong_facts.csv`, `out/board_report.xlsx`, `out/analysis.json` from everything in `data/` |
+| `npm test` | 137 tests (detection, tone, facts, scoring, formats, Excel weeks, brief wording); needs the data pack in `data/` |
 | `npm run accuracy` | Re-runs the 15-answer hand check (`-- --sample` prints the sample) |
 | `npm run sample-week` | Regenerates `samples/week7_answers.xlsx`, a fictional next week for trying out "add a week" |
 
-**Adding a new week needs no code changes.** Drop the file into `data/` (any name: Excel `.xlsx`, `.csv`, `.jsonl` or `.json`), or upload it on the *Data & exports* page. To try it, use `samples/week7_answers.xlsx`: a fictional week 7 in an Excel layout with new quirks ("W7" week labels, a "Trak-Via" spelling, a timeout, new wrong facts). Its second sheet is the answer key, and a test checks the tool agrees with it. `samples/board_report_weeks_1-7.xlsx` shows the board report after adding it. Field names, engine names, ID casing and date formats are mapped automatically. See [Data quality](docs/DATA_QUALITY.md).
+## A 10-minute walkthrough
 
-**No API keys, accounts or databases.** Everything runs on your laptop with rules and open-source libraries. Nothing calls an AI service or any other paid API, and there is no `.env` to fill in.
+1. **Monday brief** (`/`), Marcus's screen. The first lines answer: where Corvane stands, whether the latest change is *confirmed* or just normal variation, what to watch, and what to do this week. Below: the top 3 actions (priority, owner, evidence link), score cards for Corvane and the three tracked competitors, why the score moved, and wrong-fact alerts for this week. Every finding is a link to the answers behind it.
+2. **Follow a finding.** Click a line under *Why Corvane Fleet moved* or *Compare … side by side* on an action. It opens the two periods being compared, with Corvane's points in each and every answer one click away.
+3. **Open an answer** (any answer link). The original AI text with each company highlighted in its tone colour, the sentence that decided the tone, its citations, and fact checks.
+4. **Wrong facts** (`/facts`). False claims about Corvane, split into this week and earlier weeks, each linked to its answers; plus competitor errors for sales.
+5. **Questions & answers** (`/questions`), Priya's view. Filter by week, engine, buying stage, question and company.
+6. **Head-to-head** and **Sources**. Who wins each question on each engine, and which websites the answers cite.
+7. **Add a new week.** On **Data & exports** (`/data`), upload `samples/week7_answers.xlsx` (or your own unseen file: `.xlsx`, `.csv`, `.jsonl` or `.json`). It is checked, saved into `data/` and analysed at once. Return to the Monday brief: it now reports week 7, with new wrong-fact alerts (a wrong headquarters and price) and the week-on-week comparison. Field names, engine names, ID casing and date formats are mapped automatically. Alternatively, copy the file into `data/` and reload.
+8. **Downloads** on the same page: the board report (Excel) and the two scoring CSVs.
+
+The sample week is fictional and Excel-formatted, with new quirks ("W7" week labels, a "Trak-Via" spelling, a timeout, new wrong facts). Its second sheet is the answer key, and a test checks the tool agrees with it. To return to the original six weeks, delete the uploaded file from `data/`.
+
+See [Data quality](docs/DATA_QUALITY.md) for every format problem the tool handles.
 
 ## What's in the app
 
@@ -39,7 +89,7 @@ npm run dev          # analyses data/ and opens the app at http://localhost:3000
 | **Sources** | marketing | Which sites the engines cite and who appears next to them; sites citing competitors but never Corvane; where Corvane is under-represented |
 | **Data & exports** | Priya | Board report (Excel), scoring CSVs, week coverage, every data problem handled, upload |
 
-**Whose view.** The dashboard is Corvane's, so Marcus and Priya only ever see Corvane's view. To run the same tool for a competitor's view of the market, an operator sets `"perspective": "trakvia"` in `config/settings.json`. New competitors are added in `config/brands.json`. Both are configuration changes, not code changes.
+**Whose view.** The dashboard is Corvane's, so Marcus and Priya only ever see Corvane's view. To run the same tool for a competitor's view of the market, an operator sets `"perspective": "trakvia"` in `config/settings.json`. New competitors are added in `data/brands.json` (and `facts.json`, plus spellings in `config/aliases.json`). Both are configuration changes, not code changes.
 
 ## How the score works
 
@@ -155,8 +205,8 @@ Uploads are validated by parsing them before they are saved into `data/`. They a
 ## Project layout
 
 ```
-config/        brands, facts, aliases, engines, scoring weights, perspective   ← change behaviour here
-data/          weekly answer files + prompts.csv                               ← drop new weeks here
+config/        aliases, engines, scoring weights, perspective                  ← change behaviour here
+data/          the data pack (not committed) + any new weekly files            ← put the data pack here
 src/engine/    the analysis engine (pure TypeScript, no network)
 src/app/       Next.js pages and API routes
 scripts/       analyze (CLI) and accuracy

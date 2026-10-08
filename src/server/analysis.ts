@@ -1,7 +1,8 @@
 import "server-only";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { loadConfig } from "@/engine/config/loadConfig";
+import { redirect } from "next/navigation";
+import { loadConfig, missingDataPackFiles } from "@/engine/config/loadConfig";
 import { buildDataset, readSourceFiles } from "@/engine/ingest/loadDataset";
 import { runAnalysis, type AnalysisResult } from "@/engine/pipeline";
 import type { AppConfig } from "@/engine/types";
@@ -14,7 +15,9 @@ let cache: { key: string; result: AnalysisResult; config: AppConfig } | null = n
 
 /** Analysis of every answer file in data/ (including uploaded weeks); recomputed only when the files change. */
 export async function getAnalysis(): Promise<{ result: AnalysisResult; config: AppConfig }> {
-  const config = loadConfig(CONFIG_DIR);
+  // The data pack is supplied separately; without it, send the reader to the setup instructions.
+  if (missingDataPackFiles(DATA_DIR).length) redirect("/setup");
+  const config = loadConfig(CONFIG_DIR, DATA_DIR);
   const local = await readSourceFiles(DATA_DIR);
   const files = local.responses;
   const key = createHash("sha1")

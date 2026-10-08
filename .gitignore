@@ -8,12 +8,15 @@ next-env.d.ts
 .env.*
 !.env.example
 .vercel
-# Client brief stays out of the public repo; the data pack is copied into data/ and config/
+# The case-study brief and the original data pack folder stay out of the repo
 docs/AI-Native_Developer_Case_Study_Corvane_Fleet.pdf
 docs/corvane_data_pack/
 scripts/_*.ts
 supabase/.temp/
-# Weeks added on this laptop stay local; only the official data pack is committed
+# The data pack is supplied by the client and never committed (see README); only data/README.md is tracked
 data/*
-!data/responses.jsonl
-!data/prompts.csv
+!data/README.md
+config/brands.json
+config/facts.json
+# Reports generated from the data pack
+samples/board_report*.xlsx

@@ -6,9 +6,7 @@
   "description": "Corvane Signal: AI visibility tracker for Corvane Fleet",
   "scripts": {
     "analyze": "tsx scripts/analyze.ts",
-    "predev": "npm run analyze",
     "dev": "next dev",
-    "prebuild": "npm run analyze",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",

@@ -24,7 +24,10 @@ function arg(name: string, fallback: string): string {
 async function main(): Promise<void> {
   const dataPath = path.resolve(arg("data", "data"));
   const outDir = path.resolve(arg("out", "out"));
-  const config = loadConfig(path.resolve(arg("config", "config")));
+  // brands.json / facts.json: next to the answers if present there, otherwise in the project's data/ folder.
+  const dataDir = fs.existsSync(dataPath) && fs.statSync(dataPath).isDirectory() ? dataPath : path.dirname(dataPath);
+  const packDir = [dataDir, path.resolve("data")].find((d) => fs.existsSync(path.join(d, "brands.json"))) ?? path.resolve("data");
+  const config = loadConfig(path.resolve(arg("config", "config")), packDir);
   const dataset = await loadDataset(dataPath, config.engines);
   const result = runAnalysis(dataset, config);
 

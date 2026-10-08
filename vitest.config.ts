@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
     include: ["tests/**/*.test.ts"],
+    globalSetup: ["tests/setup/requireDataPack.ts"],
     coverage: { include: ["src/engine/**"], reporter: ["text", "html"] },
   },
 });
